@@ -40,6 +40,11 @@ class ZonePickerActivity : AppCompatActivity() {
         binding = ActivityZonePickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Android 15 enforces edge-to-edge; older systems need the explicit opt-in so the
+        // inset listener below owns the system bar padding on every host targetSdk, instead
+        // of the system also reserving the bar areas and double-padding the status bar.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         applyWindowInsets()
 
         applyAccent()
