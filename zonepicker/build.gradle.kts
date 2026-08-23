@@ -59,8 +59,7 @@ val publicationVersion =
         .get()
         .lineSequence()
         .firstOrNull { it.isNotBlank() }
-        ?.trim()
-        ?.removePrefix("v") ?: "dev"
+        ?.trim() ?: "dev"
 
 afterEvaluate {
     publishing {
