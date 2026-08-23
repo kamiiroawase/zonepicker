@@ -2,6 +2,9 @@ package com.github.kamiiroawase.zonepicker
 
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.content.res.Configuration
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -44,6 +47,25 @@ class ZonePickerActivity : AppCompatActivity() {
         // inset listener below owns the system bar padding on every host targetSdk, instead
         // of the system also reserving the bar areas and double-padding the status bar.
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // The pre-35 DecorView still paints the theme's bar colors (Material default
+        // colorPrimaryDark status bar, black nav bar) over that fullscreen layout, so clear
+        // them the way androidx enableEdgeToEdge does, leaving only the padded content.
+        if (Build.VERSION.SDK_INT < 35) {
+            @Suppress("DEPRECATION")
+            window.statusBarColor = Color.TRANSPARENT
+            @Suppress("DEPRECATION")
+            window.navigationBarColor = Color.TRANSPARENT
+
+            if (Build.VERSION.SDK_INT >= 29) {
+                window.isStatusBarContrastEnforced = false
+                window.isNavigationBarContrastEnforced = false
+            }
+        }
+
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) !=
+                Configuration.UI_MODE_NIGHT_YES
 
         applyWindowInsets()
 
