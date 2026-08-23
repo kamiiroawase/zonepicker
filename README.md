@@ -19,7 +19,7 @@ Android 时区选择器库：一个 Activity 完成时区选择，常用时区�
 
 ## 依赖
 
-通过 [JitPack](https://jitpack.io) 引入（先在 GitHub 发布 Release 或打 tag，如 `v1.0.0`）：
+通过 [JitPack](https://jitpack.io) 引入（先在 GitHub 发布 Release 或打 tag，如 `v1.1.0`）：
 
 ```kotlin
 // settings.gradle.kts
@@ -31,7 +31,7 @@ dependencyResolutionManagement {
 
 // build.gradle.kts
 dependencies {
-    implementation("com.github.kamiiroawase:zonepicker:v1.0.0")
+    implementation("com.github.kamiiroawase:zonepicker:v1.1.0")
 }
 ```
 
@@ -90,6 +90,11 @@ pickerLauncher.launch(
 `app` 模块为演示工程：`./gradlew :app:installDebug`。
 
 ## 更新日志
+
+### v1.1.0（2026-08-23）
+
+- 修复 Android 15 以下系统（宿主 targetSdk < 35）状态栏区域可能出现双倍留白：选择页窗口显式启用边到边，inset 处理不再依赖宿主 targetSdk 与系统默认行为
+- 修复 API 29 及以下键盘可能遮挡列表底部：显式声明 `adjustResize`，键盘高度以 inset 参与列表底部避让（API 30+ 上本就是官方推荐组合，行为不变）
 
 ### v1.0.0（2026-08-23）
 
