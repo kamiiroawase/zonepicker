@@ -19,7 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-tags: true
+          # Full clone fetches all tags in one go; fetch-tags: true breaks on tag push
+          # events with "Cannot fetch both <sha> and refs/tags/x to refs/tags/x".
+          fetch-depth: 0
 
       - uses: gradle/actions/wrapper-validation@v3
 
