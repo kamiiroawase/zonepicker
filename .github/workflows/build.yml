@@ -3,7 +3,6 @@ name: Build
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
   pull_request:
 
 permissions:
@@ -19,8 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Full clone fetches all tags in one go; fetch-tags: true breaks on tag push
-          # events with "Cannot fetch both <sha> and refs/tags/x to refs/tags/x".
+          # Full clone fetches all tags: the Gradle publication version resolves
+          # the release via `git tag --points-at HEAD`, so the main-branch run
+          # still verifies the tagged artifacts.
           fetch-depth: 0
 
       - uses: gradle/actions/wrapper-validation@v3
