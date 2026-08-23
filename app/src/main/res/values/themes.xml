@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.ZonePickerDemo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="colorPrimary">@color/demoAccent</item>
+    </style>
+</resources>

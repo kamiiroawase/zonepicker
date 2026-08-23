@@ -1,0 +1,6 @@
+root = true
+
+# Zone tables contain CJK keywords; ktlint measures such lines longer than
+# their character count, so allow extra width for Kotlin files.
+[*.{kt,kts}]
+max_line_length = 160

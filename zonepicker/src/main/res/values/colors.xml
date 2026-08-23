@@ -1,0 +1,12 @@
+<resources>
+    <!-- Overridable by the host app with same-named resources -->
+    <color name="zpPrimaryColor">#F05E1C</color>
+    <color name="zpOnAccent">#FFFFFF</color>
+    <color name="zpBackground">#F5F6F8</color>
+    <color name="zpSurface">#FFFFFF</color>
+    <color name="zpTextStrong">#000000</color>
+    <color name="zpTextPrimary">#333333</color>
+    <color name="zpTextSecondary">#9A9A9A</color>
+    <color name="zpTextHint">#B3B3B3</color>
+    <color name="zpDivider">#F0F0F0</color>
+</resources>

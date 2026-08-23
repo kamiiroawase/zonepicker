@@ -1,0 +1,64 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - uses: gradle/actions/wrapper-validation@v3
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            gradle/libs.versions.toml
+            gradle/wrapper/gradle-wrapper.properties
+            **/*.gradle.kts
+
+      - name: Build, test and lint (includes spotlessCheck)
+        run: |
+          chmod +x gradlew
+          ./gradlew build
+
+      - name: Verify Maven publishing
+        run: |
+          ./gradlew :zonepicker:publishReleasePublicationToMavenLocal
+          REPO="$HOME/.m2/repository/com/github/kamiiroawase/zonepicker"
+          VERSION=$(find "$REPO" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | head -n 1)
+          test -n "$VERSION"
+          ARTIFACTS="$REPO/$VERSION"
+          test -f "$ARTIFACTS/zonepicker-$VERSION.aar"
+          test -f "$ARTIFACTS/zonepicker-$VERSION-sources.jar"
+          test -f "$ARTIFACTS/zonepicker-$VERSION.pom"
+          test -f "$ARTIFACTS/zonepicker-$VERSION.module"
+          grep -q com.google.android.material "$ARTIFACTS/zonepicker-$VERSION.pom"
+          grep -q androidx.appcompat "$ARTIFACTS/zonepicker-$VERSION.pom"
+          echo "Published artifacts verified: $VERSION"
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            zonepicker/build/reports/tests/**
+            zonepicker/build/test-results/**
+            app/build/reports/tests/**
+          if-no-files-found: ignore
