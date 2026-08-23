@@ -65,7 +65,7 @@ class ZonePickerActivity : AppCompatActivity() {
 
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars =
             (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) !=
-                Configuration.UI_MODE_NIGHT_YES
+            Configuration.UI_MODE_NIGHT_YES
 
         applyWindowInsets()
 
