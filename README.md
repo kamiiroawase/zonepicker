@@ -19,7 +19,7 @@ Android 时区选择器库：一个 Activity 完成时区选择，常用时区�
 
 ## 依赖
 
-通过 [JitPack](https://jitpack.io) 引入（先在 GitHub 发布 Release 或打 tag，如 `v1.1.0`）：
+通过 [JitPack](https://jitpack.io) 引入（先在 GitHub 发布 Release 或打 tag，如 `v1.2.0`）：
 
 ```kotlin
 // settings.gradle.kts
@@ -31,7 +31,7 @@ dependencyResolutionManagement {
 
 // build.gradle.kts
 dependencies {
-    implementation("com.github.kamiiroawase:zonepicker:v1.1.0")
+    implementation("com.github.kamiiroawase:zonepicker:v1.2.0")
 }
 ```
 
@@ -90,6 +90,10 @@ pickerLauncher.launch(
 `app` 模块为演示工程：`./gradlew :app:installDebug`。
 
 ## 更新日志
+
+### v1.2.0（2026-08-23）
+
+- 修复 Android 15 以下系统启用边到边后状态栏 / 导航栏仍残留主题色块（如状态栏紫条、导航栏黑条）：对齐 `enableEdgeToEdge` 行为清空系统栏颜色并关闭 API 29+ 对比度遮罩，导航栏图标明暗随日夜模式切换
 
 ### v1.1.0（2026-08-23）
 
