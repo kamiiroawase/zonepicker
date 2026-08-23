@@ -5,6 +5,7 @@
         <activity
             android:name=".ZonePickerActivity"
             android:exported="false"
-            android:theme="@style/Theme.ZonePicker" />
+            android:theme="@style/Theme.ZonePicker"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 </manifest>
