@@ -3,23 +3,50 @@ package com.github.kamiiroawase.zonepicker
 import android.app.Application
 import android.content.res.Configuration
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import java.util.Locale
+import kotlin.concurrent.thread
 
-/** Caches the zone snapshot across configuration changes; rebuilds when the DST window expires. */
+/** Caches the zone snapshot across configuration changes; builds it off the main thread and
+ *  rebuilds when the DST window expires. */
 internal class ZonePickerViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
-    private var snapshot: Snapshot? = null
+    private val snapshotLiveData = MutableLiveData<Snapshot>()
 
-    fun snapshot(): Snapshot {
-        val current = snapshot
+    /** Null while the first background build is still running. */
+    val snapshot: LiveData<Snapshot> = snapshotLiveData
 
-        if (current != null && System.currentTimeMillis() - current.builtAtMillis < STALE_AFTER_MILLIS) {
-            return current
-        }
+    @Volatile
+    private var building = false
 
-        return buildSnapshot().also { snapshot = it }
+    init {
+        rebuild()
     }
+
+    /** Starts a background rebuild when the cached snapshot has crossed the DST window. */
+    fun requestFreshSnapshot() {
+        val current = snapshotLiveData.value
+
+        if (current == null || isStale(current)) rebuild()
+    }
+
+    private fun rebuild() {
+        if (building) return
+
+        building = true
+
+        thread(isDaemon = true) {
+            val snapshot = buildSnapshot()
+
+            building = false
+
+            snapshotLiveData.postValue(snapshot)
+        }
+    }
+
+    private fun isStale(snapshot: Snapshot): Boolean = System.currentTimeMillis() - snapshot.builtAtMillis >= STALE_AFTER_MILLIS
 
     private fun buildSnapshot(): Snapshot {
         val app = getApplication<Application>()

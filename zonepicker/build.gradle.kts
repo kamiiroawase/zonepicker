@@ -18,7 +18,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
     }
 
     compileOptions {
@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.livedata)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)

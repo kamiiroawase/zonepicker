@@ -25,6 +25,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        zoneId = savedInstanceState?.getString(STATE_ZONE_ID)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -35,6 +37,12 @@ class MainActivity : AppCompatActivity() {
         updateText()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        zoneId?.let { outState.putString(STATE_ZONE_ID, it) }
+    }
+
     private fun updateText() {
         val timeZone = zoneId?.let { TimeZone.getTimeZone(it) } ?: TimeZone.getDefault()
 
@@ -43,5 +51,9 @@ class MainActivity : AppCompatActivity() {
         val label = zoneId ?: getString(R.string.demo_follow_system)
 
         binding.resultText.text = getString(R.string.demo_current, "$name ($label)")
+    }
+
+    private companion object {
+        private const val STATE_ZONE_ID = "zoneId"
     }
 }

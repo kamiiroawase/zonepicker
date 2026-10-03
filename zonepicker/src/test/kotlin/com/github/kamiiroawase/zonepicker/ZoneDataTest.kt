@@ -154,6 +154,23 @@ class ZoneDataTest {
     }
 
     @Test
+    fun `buildZones breaks display name ties by zone id`() {
+        val zones =
+            ZoneData.buildZones(
+                0L,
+                ids = arrayOf("Africa/Tunis", "Africa/Algiers"),
+            )
+
+        // Precondition: the pair shares a Chinese display name, so only the zone ID key can order it
+        assertEquals(zones[0].displayName, zones[1].displayName)
+
+        assertEquals(
+            listOf("Africa/Algiers", "Africa/Tunis"),
+            zones.map { it.zoneId },
+        )
+    }
+
+    @Test
     fun `buildZones applies display name overrides`() {
         val zones = ZoneData.buildZones(0L, ZONE_NAME_OVERRIDES)
 
@@ -210,6 +227,74 @@ class ZoneDataTest {
 
         assertTrue(shown.none { it in hidden })
         assertEquals(5, zones.size)
+    }
+
+    @Test
+    fun `buildZones hides backward aliases when the canonical zone exists`() {
+        val zones =
+            ZoneData.buildZones(
+                0L,
+                ids =
+                    arrayOf(
+                        "Asia/Tokyo",
+                        "Japan",
+                        "America/Los_Angeles",
+                        "US/Pacific",
+                        "SystemV/YST9YDT",
+                        "Asia/Singapore",
+                        "Singapore",
+                        "Europe/Kyiv",
+                        "Europe/Kiev",
+                    ),
+            )
+
+        val shown = zones.map { it.zoneId }.toSet()
+
+        assertEquals(setOf("Asia/Tokyo", "America/Los_Angeles", "Asia/Singapore", "Europe/Kyiv"), shown)
+    }
+
+    @Test
+    fun `buildZones keeps a renamed zone when only the old ID exists (old tzdata)`() {
+        val zones =
+            ZoneData.buildZones(
+                0L,
+                ids = arrayOf("Europe/Kiev", "Asia/Tokyo", "Japan"),
+            )
+
+        val shown = zones.map { it.zoneId }.toSet()
+
+        // No Europe/Kyiv on this device → the pre-rename ID stays; Japan still hides behind Tokyo
+        assertEquals(setOf("Europe/Kiev", "Asia/Tokyo"), shown)
+    }
+
+    @Test
+    fun `buildZones default list contains no backward or SystemV aliases`() {
+        val shown = ZoneData.buildZones(0L).map { it.zoneId }
+
+        val aliases =
+            listOf(
+                "Japan",
+                "Hongkong",
+                "Singapore",
+                "Turkey",
+                "W-SU",
+                "US/Pacific",
+                "US/Eastern",
+                "Canada/Pacific",
+                "Mexico/BajaNorte",
+                "Brazil/East",
+                "Chile/Continental",
+                "Australia/ACT",
+                "America/Buenos_Aires",
+                "Asia/Katmandu",
+                "Asia/Saigon",
+                "Europe/Kiev",
+                "SystemV/AST4",
+            )
+
+        assertTrue(shown.none { it in aliases })
+        assertTrue(shown.contains("Asia/Tokyo"))
+        assertTrue(shown.contains("Europe/Kyiv"))
     }
 
     @Test

@@ -1,5 +1,7 @@
 <resources>
     <style name="Theme.ZonePicker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- The window paints the background so the root layout doesn't have to (avoids overdraw). -->
+        <item name="android:windowBackground">@color/zpBackground</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:textCursorDrawable">@drawable/zp_cursor</item>
     </style>

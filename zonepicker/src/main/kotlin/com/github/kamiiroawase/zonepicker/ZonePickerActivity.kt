@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
@@ -27,6 +28,9 @@ class ZonePickerActivity : AppCompatActivity() {
 
     private var selectedZoneId: String? = null
 
+    /** Scrolls to the checked zone once the first snapshot arrives; initial launch only. */
+    private var pendingSelectionScroll = false
+
     private var accentColor: Int = 0
 
     private val viewModel by lazy { ViewModelProvider(this)[ZonePickerViewModel::class.java] }
@@ -42,6 +46,10 @@ class ZonePickerActivity : AppCompatActivity() {
 
         binding = ActivityZonePickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // The picker mirrors in RTL locales on its own: resolving the layout direction from the
+        // locale here works even when the host app has not enabled RTL support.
+        binding.root.layoutDirection = View.LAYOUT_DIRECTION_LOCALE
 
         // Android 15 enforces edge-to-edge; older systems need the explicit opt-in so the
         // inset listener below owns the system bar padding on every host targetSdk, instead
@@ -84,7 +92,7 @@ class ZonePickerActivity : AppCompatActivity() {
             if (selectedZoneId == null) getString(R.string.zp_selected) else null,
         )
 
-        binding.searchEditText.doAfterTextChanged { refresh() }
+        binding.searchEditText.doAfterTextChanged { render() }
 
         binding.searchEditText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
@@ -103,14 +111,23 @@ class ZonePickerActivity : AppCompatActivity() {
         binding.recyclerView.adapter = adapter
         binding.recyclerView.itemAnimator = null
 
-        refresh()
+        pendingSelectionScroll = savedInstanceState == null && selectedZoneId != null
+
+        // Renders whenever a snapshot lands: the first build runs in the background, and a
+        // stale one crossing the DST window is rebuilt in onResume.
+        viewModel.snapshot.observe(this) { _ ->
+            render()
+
+            // After the initial render fills the list; later snapshots keep the scroll position
+            scrollToSelection()
+        }
     }
 
     override fun onResume() {
         super.onResume()
 
-        // Re-renders with a fresh snapshot when the previous one has crossed the DST window
-        refresh()
+        // Triggers a background rebuild when the cached snapshot has crossed the DST window
+        viewModel.requestFreshSnapshot()
     }
 
     private fun select(zoneId: String?) {
@@ -156,7 +173,20 @@ class ZonePickerActivity : AppCompatActivity() {
         imm.hideSoftInputFromWindow(binding.searchEditText.windowToken, 0)
     }
 
-    private fun refresh() {
+    /** Brings the checked zone to the top once, after the initial snapshot renders. */
+    private fun scrollToSelection() {
+        if (!pendingSelectionScroll) return
+
+        val index = adapter.currentList.indexOfFirst { it is ZoneRow.Item && it.selected }
+
+        if (index < 0) return
+
+        pendingSelectionScroll = false
+
+        (binding.recyclerView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(index, 0)
+    }
+
+    private fun render() {
         val query =
             binding.searchEditText.text
                 .toString()
@@ -165,13 +195,13 @@ class ZonePickerActivity : AppCompatActivity() {
         binding.searchClear.isVisible = binding.searchEditText.text.isNotBlank()
 
         // Default shows popular zones covering all offsets; search matches against all zones
-        val snapshot = viewModel.snapshot()
+        val snapshot = viewModel.snapshot.value
 
         val list =
-            if (query.isEmpty()) {
-                snapshot.defaultZones
-            } else {
-                ZoneData.filter(snapshot.zones, query, ZoneData.countryZoneIds(query))
+            when {
+                snapshot == null -> emptyList()
+                query.isEmpty() -> snapshot.defaultZones
+                else -> ZoneData.filter(snapshot.zones, query, ZoneData.countryZoneIds(query))
             }
 
         val rows = mutableListOf<ZoneRow>()
@@ -190,7 +220,8 @@ class ZonePickerActivity : AppCompatActivity() {
             }
         }
 
-        binding.emptyText.isVisible = rows.isEmpty()
+        // An empty list while the snapshot is still loading is not a "no result" state
+        binding.emptyText.isVisible = snapshot != null && rows.isEmpty()
 
         adapter.submitList(rows)
     }

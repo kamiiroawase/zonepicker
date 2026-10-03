@@ -2,48 +2,42 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/zpBackground">
+    android:layout_height="match_parent">
 
     <FrameLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="54dp"
         android:background="@color/zpPrimaryColor"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <FrameLayout
+        <TextView
+            android:id="@+id/headerTitle"
             android:layout_width="match_parent"
-            android:layout_height="54dp">
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="54dp"
+            android:layout_marginEnd="54dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="@string/zp_title"
+            android:textColor="@color/zpOnAccent"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/headerTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginStart="54dp"
-                android:layout_marginEnd="54dp"
-                android:ellipsize="end"
-                android:gravity="center"
-                android:maxLines="1"
-                android:text="@string/zp_title"
-                android:textColor="@color/zpOnAccent"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <ImageView
-                android:id="@+id/buttonBack"
-                android:layout_width="54dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical|start"
-                android:adjustViewBounds="true"
-                android:contentDescription="@string/zp_back"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="16dp"
-                android:src="@drawable/ic_back"
-                app:tint="@color/zpOnAccent" />
-        </FrameLayout>
+        <ImageView
+            android:id="@+id/buttonBack"
+            android:layout_width="54dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|start"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/zp_back"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="16dp"
+            android:src="@drawable/ic_back"
+            app:tint="@color/zpOnAccent" />
     </FrameLayout>
 
     <LinearLayout
