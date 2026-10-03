@@ -10,14 +10,14 @@ kotlin {
 }
 
 android {
-    namespace = "com.github.kamiiroawase.zonepicker.demo"
+    namespace = "io.github.kamiiroawase.zonepicker.demo"
 
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.github.kamiiroawase.zonepicker.demo"
+        applicationId = "io.github.kamiiroawase.zonepicker.demo"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
@@ -51,7 +51,7 @@ spotless {
     format("xml") {
         target("src/**/*.xml")
         trimTrailingWhitespace()
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
         endWithNewline()
     }
 }

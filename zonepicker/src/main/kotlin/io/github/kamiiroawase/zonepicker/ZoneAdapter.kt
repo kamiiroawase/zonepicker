@@ -1,4 +1,4 @@
-package com.github.kamiiroawase.zonepicker
+package io.github.kamiiroawase.zonepicker
 
 import android.content.res.ColorStateList
 import android.view.LayoutInflater
@@ -8,8 +8,8 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.github.kamiiroawase.zonepicker.databinding.ItemZoneBinding
-import com.github.kamiiroawase.zonepicker.databinding.ItemZoneHeaderBinding
+import io.github.kamiiroawase.zonepicker.databinding.ItemZoneBinding
+import io.github.kamiiroawase.zonepicker.databinding.ItemZoneHeaderBinding
 
 internal sealed interface ZoneRow {
     data class Header(

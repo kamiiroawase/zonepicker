@@ -1,4 +1,4 @@
-package com.github.kamiiroawase.zonepicker
+package io.github.kamiiroawase.zonepicker
 
 import android.os.Handler
 import android.os.Looper

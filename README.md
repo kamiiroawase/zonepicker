@@ -19,21 +19,15 @@ Android 时区选择器库：一个 Activity 完成时区选择，常用时区�
 
 ## 依赖
 
-通过 [JitPack](https://jitpack.io) 引入（先在 GitHub 发布 Release 或打 tag，如 `v1.2.0`）：
+发布于 [Maven Central](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)，版本跟随 `v*` git tag 发布：
 
 ```kotlin
-// settings.gradle.kts
-dependencyResolutionManagement {
-    repositories {
-        maven { url = uri("https://jitpack.io") }
-    }
-}
-
-// build.gradle.kts
 dependencies {
-    implementation("com.github.kamiiroawase:zonepicker:v1.2.0")
+    implementation("io.github.kamiiroawase:zonepicker:2.0.0")
 }
 ```
+
+`mavenCentral()` 仓库已包含在 Android Studio 新建工程的默认配置中；旧坐标 `com.github.kamiiroawase:zonepicker`（JitPack）自新坐标首发版本起不再更新。
 
 ## 用法
 
@@ -91,8 +85,10 @@ pickerLauncher.launch(
 
 ## 更新日志
 
-### 未发布
+### v2.0.0（2026-10-03）
 
+- **破坏性变更**：Maven 坐标与代码包名由 `com.github.kamiiroawase` 迁移至 `io.github.kamiiroawase`（依赖坐标 `io.github.kamiiroawase:zonepicker`，包名 `io.github.kamiiroawase.zonepicker`），接入方需同步更新依赖坐标与 `import`
+- 发布渠道由 JitPack 迁移至 [Maven Central](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)：vanniktech maven-publish 签名上传 Central Portal 并自动发布；版本号取自 HEAD 恰好指向的 `v*` git tag（无 tag 时为 `0.0.0-SNAPSHOT`）；新增 tag 触发的 Release workflow（README 版本坐标核对、完整构建门禁、GitHub Release 附带发布产物），删除 `jitpack.yml`
 - 修复宿主以 `AppCompatDelegate.setApplicationLocals` 切换应用内语言（API 33 以下）时，时区显示名仍为简体中文、界面中英混排的问题：名称语言现随选择页自身的 Context 解析，`values-<locale>` 覆盖与 AppCompat 应用内语言均可生效；应用内切换语言后（Activity 重建）快照自动重建
 - 修复时区快照构建完成与并发刷新之间的竞态：`building` 标志改在新值落地后的主线程复位，期间到达的语言变更也会补一次重建
 - 首次滚动定位不再依赖 `submitList` 的同步快路径：改在提交回调中按新列表定位；被搜索词过滤掉的选中项会在其首次出现时定位，无效的 `selectedZoneId` 不再无限重试
@@ -138,15 +134,15 @@ pickerLauncher.launch(
 ## 开发
 
 ```bash
-./gradlew build                                              # 构建、测试、lint 与 Spotless 检查
-./gradlew :zonepicker:testDebugUnitTest                      # 数据逻辑单元测试
-./gradlew spotlessApply                                      # Spotless + ktlint 自动格式化
-./gradlew :zonepicker:publishReleasePublicationToMavenLocal  # 本地发布，验证 AAR/sources/POM/module 产物
+./gradlew build                            # 构建、测试、lint 与 Spotless 检查
+./gradlew :zonepicker:testDebugUnitTest    # 数据逻辑单元测试
+./gradlew spotlessApply                    # Spotless + ktlint 自动格式化
+./gradlew :zonepicker:publishToMavenLocal  # 本地发布，验证 AAR/sources/POM/module 产物
 ```
 
-发布版本号取自构建时指向 HEAD 的 git tag（无 tag 时为 `dev`）；JitPack 会以自己的坐标（`com.github.User:Repo:Tag`）重新发布，不受此影响。
+发布版本号取自 HEAD 恰好指向的 `v*` git tag（无 tag 时为 `0.0.0-SNAPSHOT`）。
 
-GitHub Actions 在每次 push / PR 时自动执行构建、测试、Spotless 检查与发布产物验证（带 Gradle 依赖缓存）。
+GitHub Actions 在每次 push / PR 时自动执行构建、测试、Spotless 检查与发布产物验证（带 Gradle 依赖缓存）；推送 `v*` tag 触发 Release workflow：README 版本坐标核对与完整构建门禁通过后，签名上传 Maven Central（Central Portal 自动发布），并把产物附到 GitHub Release。
 
 ## 协议
 

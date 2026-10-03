@@ -1,0 +1,124 @@
+# Triggered on v* tag pushes: publishes the library artifacts to Maven Central (signed,
+# Central Portal, auto-released), republishes them to the local Maven repo for the GitHub
+# Release attachments (aar plus pom/module/sources files, creating the Release when it
+# does not exist), and fails loudly when the README's documented version coordinates were
+# not bumped with the tag. The full build gate (compile, tests, format and lint checks)
+# runs on the tag itself before anything is published — a tag may point at a commit that
+# never went through the Build workflow, and a Central publication cannot be undone.
+#
+# Required repository secrets (Central Portal: https://central.sonatype.com):
+#   ORG_GRADLE_PROJECT_mavenCentralUsername / …Password — a Portal user token
+#   ORG_GRADLE_PROJECT_signingInMemoryKey — the ASCII-armored secret key
+#     (gpg --export-secret-keys --armor …)
+#   ORG_GRADLE_PROJECT_signingInMemoryKeyId — the key id
+#   ORG_GRADLE_PROJECT_signingInMemoryKeyPassword — that key's passphrase
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full clone: the version derives from the exact v* tag at HEAD; a shallow
+          # clone misses the tags
+          fetch-depth: 0
+
+      # The README documents the released coordinates in the dependency snippet and keeps
+      # the changelog history in the same file; a forgotten bump ships stale versions to
+      # every reader until someone notices. Fail the release instead: the dependency
+      # snippet must reference the tag's version, the changelog must carry the tag's
+      # version section (moving 未发布 under it), and the dependency snippet must have
+      # dropped the previous tag's version — the changelog's historical sections keep old
+      # versions by design, so only the snippet is checked for staleness. The match is
+      # token-anchored — a plain fixed-string grep would hit substrings (1.2.1 inside
+      # 1.2.11)
+      - name: Check README version coordinates match the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          test -n "$VERSION"
+          coord_version() {
+            grep -Eq "zonepicker:v${1//./\\.}([^0-9.]|$)" "$2"
+          }
+          coord_version "$VERSION" README.md || {
+            echo "README.md dependency snippet does not reference version $VERSION"
+            exit 1
+          }
+          grep -q "^### v$VERSION（" README.md || {
+            echo "README.md changelog has no v$VERSION section — move 未发布 under it"
+            exit 1
+          }
+          PREV_TAG="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          if [ -n "$PREV_TAG" ]; then
+            PREV_VERSION="${PREV_TAG#v}"
+            if coord_version "$PREV_VERSION" README.md; then
+              echo "README.md dependency snippet still references the previous version $PREV_VERSION — bump the documented coordinates"
+              exit 1
+            fi
+          fi
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            gradle/libs.versions.toml
+            gradle/wrapper/gradle-wrapper.properties
+            **/*.gradle.kts
+
+      # Same gate the Build workflow runs on main: the tag may point at a commit that
+      # never went through CI (pushed from a feature branch, say), and publishing to
+      # Central is irreversible — verify before anything is published
+      - name: Build and test
+        run: chmod +x gradlew && ./gradlew build
+
+      - name: Publish to local Maven
+        run: chmod +x gradlew && ./gradlew :zonepicker:publishToMavenLocal
+
+      # The tag checkout sits exactly on the v* tag, so the exact-match derivation must
+      # produce precisely the tag version — a SNAPSHOT here would publish the release
+      # assets under wrong coordinates and break every documented lookup
+      - name: Verify published version equals the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          test -d "$HOME/.m2/repository/io/github/kamiiroawase/zonepicker/$VERSION" || {
+            echo "expected published version $VERSION (exact-match tag derivation), found instead:"
+            ls "$HOME/.m2/repository/io/github/kamiiroawase/zonepicker"
+            exit 1
+          }
+
+      # The real distribution: signed artifacts uploaded to the Central Portal and
+      # released automatically. --no-configuration-cache keeps the publish task out of
+      # any third-party config-cache edge cases; the release must not fail on those
+      - name: Publish to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralUsername }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralPassword }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKeyId }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKeyPassword }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKey }}
+        run: ./gradlew :zonepicker:publishToMavenCentral --no-configuration-cache
+
+      - name: Collect release assets
+        run: |
+          M2="$HOME/.m2/repository/io/github/kamiiroawase/zonepicker"
+          STAGE="release-assets"
+          mkdir -p "$STAGE"
+          find "$M2" -type f ! -name 'maven-metadata-local.xml' -exec cp {} "$STAGE/" \;
+          echo "Collected $(find "$STAGE" -type f | wc -l) files"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            release-assets/*
+          generate_release_notes: true

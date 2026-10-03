@@ -1,4 +1,4 @@
-package com.github.kamiiroawase.zonepicker
+package io.github.kamiiroawase.zonepicker
 
 import android.content.Context
 import android.content.Intent
@@ -8,9 +8,9 @@ import android.content.Intent
  * The result is returned via Activity result; persistence is left to the host app.
  */
 object ZonePicker {
-    const val EXTRA_ZONE_ID = "com.github.kamiiroawase.zonepicker.EXTRA_ZONE_ID"
-    const val EXTRA_ACCENT_COLOR = "com.github.kamiiroawase.zonepicker.EXTRA_ACCENT_COLOR"
-    const val EXTRA_TITLE = "com.github.kamiiroawase.zonepicker.EXTRA_TITLE"
+    const val EXTRA_ZONE_ID = "io.github.kamiiroawase.zonepicker.EXTRA_ZONE_ID"
+    const val EXTRA_ACCENT_COLOR = "io.github.kamiiroawase.zonepicker.EXTRA_ACCENT_COLOR"
+    const val EXTRA_TITLE = "io.github.kamiiroawase.zonepicker.EXTRA_TITLE"
 
     /**
      * @param selectedZoneId currently selected zone ID (e.g. Asia/Shanghai), checkmarked in the

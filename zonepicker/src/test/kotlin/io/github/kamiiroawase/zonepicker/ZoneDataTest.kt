@@ -1,4 +1,4 @@
-package com.github.kamiiroawase.zonepicker
+package io.github.kamiiroawase.zonepicker
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

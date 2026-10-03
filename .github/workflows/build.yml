@@ -16,16 +16,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
-          # Full clone fetches all tags: the Gradle publication version resolves
-          # the release via `git tag --points-at HEAD`, so the main-branch run
-          # still verifies the tagged artifacts.
+          # Full clone: the publication version derives from the exact v* tag at HEAD via
+          # git describe; a shallow clone misses the tags.
           fetch-depth: 0
 
-      - uses: gradle/actions/wrapper-validation@v3
+      - uses: gradle/actions/wrapper-validation@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
@@ -40,13 +39,23 @@ jobs:
           chmod +x gradlew
           ./gradlew build
 
+      # The Maven Central publish itself runs only in the Release workflow (tag push, with
+      # credentials); here the publishing pipeline gets its only CI coverage: after
+      # publishing to the local Maven repo, assert the artifacts land under a single
+      # version directory and the pom carries the heavyweight transitive dependencies. The
+      # exact-tag version derivation is end-to-end guarded in the Release workflow (which
+      # checks the tag out); here the version is whatever the current HEAD derives —
+      # 0.0.0-SNAPSHOT on a plain main push (HEAD sits past the tag, by design: the
+      # released number never sticks to unreleased commits), the tag version only when
+      # main HEAD is itself tagged
       - name: Verify Maven publishing
         run: |
-          ./gradlew :zonepicker:publishReleasePublicationToMavenLocal
-          REPO="$HOME/.m2/repository/com/github/kamiiroawase/zonepicker"
-          VERSION=$(find "$REPO" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | head -n 1)
+          ./gradlew :zonepicker:publishToMavenLocal
+          ROOT="$HOME/.m2/repository/io/github/kamiiroawase/zonepicker"
+          test "$(find "$ROOT" -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 1
+          VERSION=$(find "$ROOT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | head -n 1)
           test -n "$VERSION"
-          ARTIFACTS="$REPO/$VERSION"
+          ARTIFACTS="$ROOT/$VERSION"
           test -f "$ARTIFACTS/zonepicker-$VERSION.aar"
           test -f "$ARTIFACTS/zonepicker-$VERSION-sources.jar"
           test -f "$ARTIFACTS/zonepicker-$VERSION.pom"
@@ -57,7 +66,7 @@ jobs:
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: |

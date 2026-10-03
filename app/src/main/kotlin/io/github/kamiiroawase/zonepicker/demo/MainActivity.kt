@@ -1,11 +1,11 @@
-package com.github.kamiiroawase.zonepicker.demo
+package io.github.kamiiroawase.zonepicker.demo
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.github.kamiiroawase.zonepicker.ZonePickerContract
-import com.github.kamiiroawase.zonepicker.ZonePickerRequest
-import com.github.kamiiroawase.zonepicker.ZonePickerResult
-import com.github.kamiiroawase.zonepicker.demo.databinding.ActivityMainBinding
+import io.github.kamiiroawase.zonepicker.ZonePickerContract
+import io.github.kamiiroawase.zonepicker.ZonePickerRequest
+import io.github.kamiiroawase.zonepicker.ZonePickerResult
+import io.github.kamiiroawase.zonepicker.demo.databinding.ActivityMainBinding
 import java.util.Locale
 import java.util.TimeZone
 

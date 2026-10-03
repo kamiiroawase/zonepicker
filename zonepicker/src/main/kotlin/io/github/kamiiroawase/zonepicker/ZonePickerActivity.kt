@@ -1,4 +1,4 @@
-package com.github.kamiiroawase.zonepicker
+package io.github.kamiiroawase.zonepicker
 
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -19,7 +19,7 @@ import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.github.kamiiroawase.zonepicker.databinding.ActivityZonePickerBinding
+import io.github.kamiiroawase.zonepicker.databinding.ActivityZonePickerBinding
 import java.util.Locale
 
 class ZonePickerActivity : AppCompatActivity() {
