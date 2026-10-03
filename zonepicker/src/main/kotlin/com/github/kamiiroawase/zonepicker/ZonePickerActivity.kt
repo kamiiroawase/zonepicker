@@ -20,6 +20,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.kamiiroawase.zonepicker.databinding.ActivityZonePickerBinding
+import java.util.Locale
 
 class ZonePickerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityZonePickerBinding
@@ -28,7 +29,8 @@ class ZonePickerActivity : AppCompatActivity() {
 
     private var selectedZoneId: String? = null
 
-    /** Scrolls to the checked zone once the first snapshot arrives; initial launch only. */
+    /** Scrolls the checked zone to the top once, on its first appearance in the rendered
+     *  list; initial launch only. */
     private var pendingSelectionScroll = false
 
     private var accentColor: Int = 0
@@ -37,6 +39,12 @@ class ZonePickerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Zone names must follow the picker's own UI language. They resolve against this
+        // activity's context — AppCompat per-app locales are applied there, never to the
+        // application context — and are re-pushed on every recreation, so an in-app language
+        // switch surviving recreation rebuilds the snapshot.
+        viewModel.setZoneNames(resolveZoneNames())
 
         selectedZoneId = intent.getStringExtra(ZonePicker.EXTRA_ZONE_ID)
 
@@ -115,12 +123,7 @@ class ZonePickerActivity : AppCompatActivity() {
 
         // Renders whenever a snapshot lands: the first build runs in the background, and a
         // stale one crossing the DST window is rebuilt in onResume.
-        viewModel.snapshot.observe(this) { _ ->
-            render()
-
-            // After the initial render fills the list; later snapshots keep the scroll position
-            scrollToSelection()
-        }
+        viewModel.snapshot.observe(this) { render() }
     }
 
     override fun onResume() {
@@ -173,11 +176,24 @@ class ZonePickerActivity : AppCompatActivity() {
         imm.hideSoftInputFromWindow(binding.searchEditText.windowToken, 0)
     }
 
-    /** Brings the checked zone to the top once, after the initial snapshot renders. */
-    private fun scrollToSelection() {
-        if (!pendingSelectionScroll) return
+    /** Brings the checked zone to the top the first time the rendered list contains it. Runs
+     *  from the submitList commit callback, so the position targets the committed list rather
+     *  than whatever the async diff still holds; a selection filtered out by the current query
+     *  waits for the query to clear, and an unknown zone ID gives up — it never shows a
+     *  checkmark anyway. */
+    private fun scrollToSelection(
+        rows: List<ZoneRow>,
+        snapshot: ZonePickerViewModel.Snapshot?,
+    ) {
+        if (!pendingSelectionScroll || snapshot == null) return
 
-        val index = adapter.currentList.indexOfFirst { it is ZoneRow.Item && it.selected }
+        if (snapshot.zones.none { it.zoneId == selectedZoneId }) {
+            pendingSelectionScroll = false
+
+            return
+        }
+
+        val index = rows.indexOfFirst { it is ZoneRow.Item && it.selected }
 
         if (index < 0) return
 
@@ -192,7 +208,7 @@ class ZonePickerActivity : AppCompatActivity() {
                 .toString()
                 .trim()
 
-        binding.searchClear.isVisible = binding.searchEditText.text.isNotBlank()
+        binding.searchClear.isVisible = query.isNotEmpty()
 
         // Default shows popular zones covering all offsets; search matches against all zones
         val snapshot = viewModel.snapshot.value
@@ -223,7 +239,36 @@ class ZonePickerActivity : AppCompatActivity() {
         // An empty list while the snapshot is still loading is not a "no result" state
         binding.emptyText.isVisible = snapshot != null && rows.isEmpty()
 
-        adapter.submitList(rows)
+        adapter.submitList(rows) { scrollToSelection(rows, snapshot) }
+    }
+
+    /** Zone names follow the picker UI language: the default Chinese strings yield Chinese
+     *  names, while a host localizing them — values-<locale> overrides or AppCompat per-app
+     *  locales — gets names in that language. */
+    private fun resolveZoneNames(): ZonePickerViewModel.ZoneNames =
+        ZonePickerViewModel.ZoneNames(
+            nameLocale = resolveNameLocale(),
+            overrides =
+                mapOf(
+                    "Asia/Taipei" to getString(R.string.zp_taipei_name),
+                    "Asia/Hong_Kong" to getString(R.string.zp_hong_kong_name),
+                    "Asia/Macau" to getString(R.string.zp_macau_name),
+                ),
+        )
+
+    /** Chinese while the picker's own strings are the default Chinese ones; otherwise the
+     *  activity locale, which reflects both system and AppCompat per-app language. */
+    private fun resolveNameLocale(): Locale {
+        val appContext = applicationContext
+
+        val chinese =
+            Configuration(appContext.resources.configuration).apply { setLocale(Locale.SIMPLIFIED_CHINESE) }
+
+        return if (appContext.createConfigurationContext(chinese).getString(R.string.zp_title) == getString(R.string.zp_title)) {
+            Locale.SIMPLIFIED_CHINESE
+        } else {
+            resources.configuration.locales[0] ?: Locale.getDefault()
+        }
     }
 
     private companion object {

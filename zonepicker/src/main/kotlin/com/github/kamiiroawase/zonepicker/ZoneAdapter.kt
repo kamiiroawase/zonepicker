@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.github.kamiiroawase.zonepicker.databinding.ItemZoneBinding
 import com.github.kamiiroawase.zonepicker.databinding.ItemZoneHeaderBinding
 
-sealed interface ZoneRow {
+internal sealed interface ZoneRow {
     data class Header(
         val title: String,
     ) : ZoneRow
@@ -24,7 +24,7 @@ sealed interface ZoneRow {
     ) : ZoneRow
 }
 
-class ZoneAdapter(
+internal class ZoneAdapter(
     private val accentColor: Int,
     private val onItemClick: (String) -> Unit,
 ) : ListAdapter<ZoneRow, RecyclerView.ViewHolder>(DIFF) {

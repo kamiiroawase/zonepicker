@@ -91,6 +91,15 @@ pickerLauncher.launch(
 
 ## 更新日志
 
+### 未发布
+
+- 修复宿主以 `AppCompatDelegate.setApplicationLocals` 切换应用内语言（API 33 以下）时，时区显示名仍为简体中文、界面中英混排的问题：名称语言现随选择页自身的 Context 解析，`values-<locale>` 覆盖与 AppCompat 应用内语言均可生效；应用内切换语言后（Activity 重建）快照自动重建
+- 修复时区快照构建完成与并发刷新之间的竞态：`building` 标志改在新值落地后的主线程复位，期间到达的语言变更也会补一次重建
+- 首次滚动定位不再依赖 `submitList` 的同步快路径：改在提交回调中按新列表定位；被搜索词过滤掉的选中项会在其首次出现时定位，无效的 `selectedZoneId` 不再无限重试
+- 搜索清除按钮可见性与过滤条件统一（纯空格输入不再显示清除按钮）
+- `ZoneAdapter` / `ZoneRow` 收敛为 internal，公共 API 面缩小为 `ZonePicker`、`ZonePickerContract` 及其请求/结果类型
+- 发布 POM 补充 `developers` 与 `scm` 元数据；Demo 改用 `ZonePickerContract` 演示推荐用法
+
 ### v1.2.1（2026-10-03）
 
 - 修复 Android 7.x（API 24/25）界面内边距全部丢失的问题：`paddingHorizontal/paddingVertical` 属性需 API 26 起生效，minSdk 由 24 提升至 26（**破坏性变更**：仍在支持 API 24/25 的 App 请先评估再升级）
@@ -123,7 +132,7 @@ pickerLauncher.launch(
 ## 已知限制
 
 - **搜索范围**：支持时区显示名、时区 ID（英文）、GMT 偏移与内置国家表中英文名。中文城市名（如「上海」）暂不可搜——请用英文城市名（如 `shanghai`）或国家名代替；国家表未收录的国家同理。已被剔除的旧别名 ID（如 `Asia/Saigon`、`Asia/Calcutta`）不可搜——请用其规范 ID 或对应城市名。
-- **时区显示名语言**：默认按简体中文生成。宿主本地化 `zp_*` 字符串时时区名会跟随 App 语言，但需保证默认 `values/`（保持中文）与目标语言的 `values-<locale>/` 同时提供，仅覆盖默认 `values/` 为其他语言时时区名仍为中文。
+- **时区显示名语言**：默认按简体中文生成。宿主本地化 `zp_*` 字符串时时区名会跟随 App 语言（含 `AppCompatDelegate` 应用内语言切换），但需保证默认 `values/`（保持中文）与目标语言的 `values-<locale>/` 同时提供，仅覆盖默认 `values/` 为其他语言时时区名仍为中文。
 - **无效入参**：传入不存在的 `selectedZoneId` 时，列表中不会有任何选中标记（也不会回退为「跟随系统」）。
 
 ## 开发

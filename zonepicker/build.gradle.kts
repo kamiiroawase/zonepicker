@@ -84,6 +84,18 @@ afterEvaluate {
                             url.set("https://unlicense.org")
                         }
                     }
+                    developers {
+                        developer {
+                            id.set("kamiiroawase")
+                            name.set("kamiiroawase")
+                            url.set("https://github.com/kamiiroawase")
+                        }
+                    }
+                    scm {
+                        url.set("https://github.com/kamiiroawase/zonepicker")
+                        connection.set("scm:git:https://github.com/kamiiroawase/zonepicker.git")
+                        developerConnection.set("scm:git:git@github.com:kamiiroawase/zonepicker.git")
+                    }
                 }
             }
         }

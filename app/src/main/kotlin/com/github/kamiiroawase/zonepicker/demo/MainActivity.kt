@@ -1,9 +1,10 @@
 package com.github.kamiiroawase.zonepicker.demo
 
 import android.os.Bundle
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.github.kamiiroawase.zonepicker.ZonePicker
+import com.github.kamiiroawase.zonepicker.ZonePickerContract
+import com.github.kamiiroawase.zonepicker.ZonePickerRequest
+import com.github.kamiiroawase.zonepicker.ZonePickerResult
 import com.github.kamiiroawase.zonepicker.demo.databinding.ActivityMainBinding
 import java.util.Locale
 import java.util.TimeZone
@@ -14,12 +15,14 @@ class MainActivity : AppCompatActivity() {
     private var zoneId: String? = null
 
     private val pickerLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                zoneId = ZonePicker.getResultZoneId(result.data)
-
-                updateText()
+        registerForActivityResult(ZonePickerContract()) { result ->
+            when (result) {
+                is ZonePickerResult.Selected -> zoneId = result.zoneId
+                ZonePickerResult.FollowSystem -> zoneId = null
+                ZonePickerResult.Canceled -> return@registerForActivityResult
             }
+
+            updateText()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.pickButton.setOnClickListener {
-            pickerLauncher.launch(ZonePicker.createIntent(this, zoneId))
+            pickerLauncher.launch(ZonePickerRequest(selectedZoneId = zoneId))
         }
 
         updateText()
