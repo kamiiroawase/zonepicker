@@ -46,7 +46,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           test -n "$VERSION"
           coord_version() {
-            grep -Eq "zonepicker:v${1//./\\.}([^0-9.]|$)" "$2"
+            grep -Eq "zonepicker:${1//./\\.}([^0-9.]|$)" "$2"
           }
           coord_version "$VERSION" README.md || {
             echo "README.md dependency snippet does not reference version $VERSION"
