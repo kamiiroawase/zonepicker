@@ -36,6 +36,7 @@
             android:layout_height="54dp"
             android:layout_gravity="center_vertical|start"
             android:contentDescription="@string/zp_back"
+            android:foreground="?android:attr/selectableItemBackground"
             android:paddingHorizontal="12dp"
             android:paddingVertical="16dp"
             android:src="@drawable/ic_back"

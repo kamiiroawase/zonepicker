@@ -46,7 +46,13 @@ class ZonePickerActivity : AppCompatActivity() {
         // switch surviving recreation rebuilds the snapshot.
         viewModel.setZoneNames(resolveZoneNames())
 
-        selectedZoneId = intent.getStringExtra(ZonePicker.EXTRA_ZONE_ID)
+        // Stored legacy aliases (US/Pacific, Etc/UTC) and canonical IDs this old tzdata never
+        // heard of resolve to the ID the list actually shows, so the checkmark lands on a
+        // visible row instead of silently disappearing.
+        selectedZoneId =
+            intent
+                .getStringExtra(ZonePicker.EXTRA_ZONE_ID)
+                ?.let { ZoneData.resolveDisplayZoneId(it) }
 
         accentColor = intent
             .getIntExtra(ZonePicker.EXTRA_ACCENT_COLOR, ACCENT_UNSET)
@@ -148,12 +154,23 @@ class ZonePickerActivity : AppCompatActivity() {
 
         binding.followSystemCheck.imageTintList = ColorStateList.valueOf(accentColor)
 
+        // The theme's zp_cursor drawable carries the default zpPrimaryColor; retint it to the
+        // caller's accent where the platform exposes the cursor drawable (API 33+). Earlier
+        // versions keep the default-colored cursor.
+        if (Build.VERSION.SDK_INT >= 33) {
+            binding.searchEditText.textCursorDrawable
+                ?.mutate()
+                ?.setTint(accentColor)
+        }
+
         WindowCompat
             .getInsetsController(window, window.decorView)
             .isAppearanceLightStatusBars = ColorUtils.calculateLuminance(accentColor) > 0.5
     }
 
-    /** Header pads below status bar/cutout; list content pads above nav bar and keyboard. */
+    /** Header pads below the status bar; list content pads above the nav bar and keyboard.
+     *  Horizontal insets — landscape display cutouts, side-placed navigation bars — pad both
+     *  columns so nothing sits under them. */
     private fun applyWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val bars =
@@ -163,8 +180,13 @@ class ZonePickerActivity : AppCompatActivity() {
 
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
 
-            binding.header.updatePadding(top = bars.top)
-            binding.contentContainer.updatePadding(bottom = maxOf(bars.bottom, ime.bottom))
+            binding.header.updatePadding(top = bars.top, left = bars.left, right = bars.right)
+
+            binding.contentContainer.updatePadding(
+                left = bars.left,
+                right = bars.right,
+                bottom = maxOf(bars.bottom, ime.bottom),
+            )
 
             WindowInsetsCompat.CONSUMED
         }

@@ -326,6 +326,87 @@ class ZoneDataTest {
     }
 
     @Test
+    fun `offset queries do not text-match etc zone ids with inverted sign`() {
+        // Etc/GMT+8 is UTC-8: its ID text must not answer a "+8" search
+        val etcGmtPlus8 = ZoneData.Zone("Etc/GMT+8", "GMT+08:00", -8 * 3600)
+        val etcGmtMinus12 = ZoneData.Zone("Etc/GMT-12", "GMT-12:00", 12 * 3600)
+
+        assertFalse(ZoneData.matches(etcGmtPlus8, "gmt+8"))
+        assertTrue(ZoneData.matches(etcGmtPlus8, "gmt-8"))
+        assertFalse(ZoneData.matches(etcGmtMinus12, "gmt-12"))
+        assertTrue(ZoneData.matches(etcGmtMinus12, "gmt+12"))
+
+        // Exact ID search keeps working — the query is not offset-shaped
+        assertTrue(ZoneData.matches(etcGmtPlus8, "etc/gmt+8"))
+
+        // Sign-less queries keep their text behavior: "gmt8" hits Etc/GMT-8's ID (UTC+8)
+        assertTrue(ZoneData.matches(ZoneData.Zone("Etc/GMT-8", "GMT-08:00", 8 * 3600), "gmt8"))
+    }
+
+    @Test
+    fun `offset queries accept the utc prefix`() {
+        val shanghai = ZoneData.Zone("Asia/Shanghai", "中国标准时间", 8 * 3600)
+        val utc = ZoneData.Zone("UTC", "协调世界时", 0)
+
+        assertTrue(ZoneData.matches(shanghai, "utc+8"))
+        assertFalse(ZoneData.matches(shanghai, "utc+9"))
+
+        // Bare "utc" stays a text query and still finds the zone
+        assertTrue(ZoneData.matches(utc, "utc"))
+    }
+
+    @Test
+    fun `bare digit queries anchor the zero-stripped offset form`() {
+        val shanghai = ZoneData.Zone("Asia/Shanghai", "中国标准时间", 8 * 3600)
+        val kolkata = ZoneData.Zone("Asia/Kolkata", "印度标准时间", 5 * 3600 + 1800)
+
+        // "80" hits the label form of GMT+08:00, "530" that of GMT+05:30
+        assertTrue(ZoneData.matches(shanghai, "80"))
+        assertFalse(ZoneData.matches(shanghai, "90"))
+        assertTrue(ZoneData.matches(kolkata, "530"))
+        assertFalse(ZoneData.matches(kolkata, "500"))
+    }
+
+    @Test
+    fun `short latin prefixes no longer blur single-word countries`() {
+        val uk = ZoneData.countryZoneIds("uk")
+
+        assertTrue(uk.contains("Europe/London"))
+        assertFalse(uk.contains("Europe/Kyiv"))
+
+        // Whole tokens of any length and 3+-letter prefixes keep matching
+        assertTrue(ZoneData.countryZoneIds("ukraine").contains("Europe/Kyiv"))
+        assertTrue(ZoneData.countryZoneIds("ame").contains("America/New_York"))
+
+        // 1-2 letter fragments without an exact keyword match find nothing
+        assertTrue(ZoneData.countryZoneIds("au").isEmpty())
+    }
+
+    @Test
+    fun `resolveDisplayZoneId maps aliases to the zone the list shows`() {
+        assertEquals("America/Los_Angeles", ZoneData.resolveDisplayZoneId("US/Pacific"))
+        assertEquals("Asia/Kolkata", ZoneData.resolveDisplayZoneId("Asia/Calcutta"))
+        assertEquals("UTC", ZoneData.resolveDisplayZoneId("Etc/UTC"))
+        assertEquals("GMT", ZoneData.resolveDisplayZoneId("Greenwich"))
+
+        // Known zones and unknown IDs pass through unchanged
+        assertEquals("Asia/Tokyo", ZoneData.resolveDisplayZoneId("Asia/Tokyo"))
+        assertEquals("Mars/Olympus", ZoneData.resolveDisplayZoneId("Mars/Olympus"))
+    }
+
+    @Test
+    fun `resolveDisplayZoneId falls back to the pre-rename id on old tzdata`() {
+        // JVM tzdata knows the canonical Kyiv
+        assertEquals("Europe/Kyiv", ZoneData.resolveDisplayZoneId("Europe/Kyiv"))
+
+        // A device still on pre-2022 tzdata shows the pre-rename ID for both directions
+        val oldTzdata = arrayOf("Europe/Kiev", "Asia/Tokyo")
+
+        assertEquals("Europe/Kiev", ZoneData.resolveDisplayZoneId("Europe/Kyiv", ids = oldTzdata))
+        assertEquals("Europe/Kiev", ZoneData.resolveDisplayZoneId("Europe/Kiev", ids = oldTzdata))
+    }
+
+    @Test
     fun `defaultZones covers every offset and keeps preferred`() {
         val zones = ZoneData.buildZones(0L, ZONE_NAME_OVERRIDES)
 

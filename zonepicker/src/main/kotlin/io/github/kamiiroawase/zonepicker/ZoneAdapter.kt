@@ -71,7 +71,11 @@ internal class ZoneAdapter(
                 binding.zoneIdText.text = row.subtitle
                 binding.zoneCheckImage.isVisible = row.selected
                 binding.zoneCheckImage.imageTintList = ColorStateList.valueOf(accentColor)
-                binding.zoneDivider.isVisible = position < itemCount - 1
+
+                // No divider under the list's last row, nor above a group header: the header's
+                // own top padding separates the groups instead of hanging off the previous one.
+                binding.zoneDivider.isVisible =
+                    position < itemCount - 1 && getItem(position + 1) is ZoneRow.Item
                 binding.zoneRow.setOnClickListener { onItemClick(row.zoneId) }
 
                 ViewCompat.setStateDescription(

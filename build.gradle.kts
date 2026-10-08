@@ -5,6 +5,23 @@ plugins {
     // shared build service twice and failing task creation on Gradle 9.
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
-    alias(libs.plugins.spotless) apply false
     alias(libs.plugins.maven.publish) apply false
+
+    // Spotless applies at the root too: the per-module "*.gradle.kts" targets never reach
+    // the root's build.gradle.kts and settings.gradle.kts. base supplies this project's
+    // assemble/check/build lifecycle so CI's plain `gradlew build` also runs the root
+    // spotlessCheck alongside the module builds.
+    base
+    alias(libs.plugins.spotless)
+}
+
+// Spotless wires spotlessCheck into `check` itself when the task exists; the explicit edge
+// keeps that true regardless of plugin application order.
+tasks.named("check") { dependsOn(tasks.named("spotlessCheck")) }
+
+spotless {
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint()
+    }
 }

@@ -337,6 +337,52 @@ internal object ZoneData {
         return canonicalId in availableIds
     }
 
+    /** Resolves an incoming zone ID to the ID this device's list actually shows, mirroring
+     *  [buildZones]: IANA backward aliases map to their canonical zone when it exists
+     *  (US/Pacific → America/Los_Angeles), hidden UTC/GMT twins map to the bare UTC/GMT
+     *  rows that stay visible (Etc/UTC → UTC), and a canonical ID an older tzdata never
+     *  heard of falls back to its pre-rename alias (Europe/Kyiv → Europe/Kiev). Everything
+     *  else — known IDs, unknown IDs, IDs the list hides anyway (EST, the SystemV zones) —
+     *  passes through unchanged; pass-through IDs simply match no row. */
+    fun resolveDisplayZoneId(
+        zoneId: String,
+        ids: Array<String> = TimeZone.getAvailableIDs(),
+    ): String {
+        val availableIds = ids.toHashSet()
+
+        (BACKWARD_ALIAS_TARGETS[zoneId] ?: HIDDEN_ALIAS_TARGETS[zoneId])
+            ?.takeIf { it in availableIds }
+            ?.let { return it }
+
+        if (zoneId !in availableIds) {
+            BACKWARD_ALIAS_TARGETS.entries
+                .firstOrNull { it.value == zoneId && it.key in availableIds }
+                ?.let { return it.key }
+        }
+
+        return zoneId
+    }
+
+    /** The redundant aliases [HIDDEN_ZONE_IDS] removes → the bare UTC/GMT rows kept visible. */
+    private val HIDDEN_ALIAS_TARGETS =
+        mapOf(
+            "GMT0" to "GMT",
+            "GMT+0" to "GMT",
+            "GMT-0" to "GMT",
+            "Etc/GMT0" to "GMT",
+            "Etc/GMT+0" to "GMT",
+            "Etc/GMT-0" to "GMT",
+            "Greenwich" to "GMT",
+            "Etc/Greenwich" to "GMT",
+            "UCT" to "UTC",
+            "Etc/UCT" to "UTC",
+            "Universal" to "UTC",
+            "Etc/Universal" to "UTC",
+            "Zulu" to "UTC",
+            "Etc/Zulu" to "UTC",
+            "Etc/UTC" to "UTC",
+        )
+
     /** Default list: popular zones plus one representative for each uncovered offset. */
     fun defaultZones(zones: List<Zone>): List<Zone> {
         val preferred = zones.filter { it.zoneId in PREFERRED_ZONE_IDS }
@@ -362,7 +408,7 @@ internal object ZoneData {
     ): Boolean {
         if (query.isEmpty()) return true
 
-        return matchesCore(zone, normalizeZoneText(query), normalizeOffsetText(query))
+        return matchesCore(zone, searchableText(query), normalizeOffsetText(query))
     }
 
     /** Bulk matching for a whole list; the query is normalized once instead of once per zone. */
@@ -373,7 +419,7 @@ internal object ZoneData {
     ): List<Zone> {
         if (query.isEmpty()) return zones
 
-        val textQuery = normalizeZoneText(query)
+        val textQuery = searchableText(query)
         val offsetQuery = normalizeOffsetText(query)
 
         return zones.filter { matchesCore(it, textQuery, offsetQuery) || it.zoneId in extraZoneIds }
@@ -381,12 +427,32 @@ internal object ZoneData {
 
     private fun matchesCore(
         zone: Zone,
-        textQuery: String,
+        textQuery: String?,
         offsetQuery: String,
     ): Boolean =
-        normalizeZoneText(zone.zoneId).contains(textQuery) ||
-            normalizeZoneText(zone.displayName).contains(textQuery) ||
+        (
+            textQuery != null &&
+                (
+                    normalizeZoneText(zone.zoneId).contains(textQuery) ||
+                        normalizeZoneText(zone.displayName).contains(textQuery)
+                )
+        ) ||
             normalizeOffsetText(offsetLabel(zone.offsetSeconds)).contains(offsetQuery)
+
+    /** The query's text-search form, or null when the query is offset-shaped ("gmt+8",
+     *  "utc-05:30"): those match only by offset label, because zone IDs like Etc/GMT+8
+     *  invert the sign and their ID text would answer a "+8" search with a UTC-8 zone.
+     *  Classification runs on the offset form — it keeps the sign and drops spaces, so
+     *  "GMT +8" counts as offset-shaped too — and demands a signed digit after the
+     *  prefix, leaving sign-less queries ("gmt8" hits Etc/GMT-8's ID text) and bare
+     *  "gmt"/"utc" as text searches. */
+    private fun searchableText(query: String): String? {
+        val textQuery = normalizeZoneText(query)
+
+        return if (OFFSET_QUERY_PREFIX.containsMatchIn(normalizeOffsetText(query))) null else textQuery
+    }
+
+    private val OFFSET_QUERY_PREFIX = Regex("^(?:gmt|utc)[+-]\\d")
 
     /** Zone-text search form with every separator (spaces, underscores, hyphens) removed from
      *  both sides of the match, so "new york", "newyork" and "new_york" all hit
@@ -395,14 +461,18 @@ internal object ZoneData {
 
     private val ZONE_TEXT_SEPARATOR_REGEX = Regex("[\\s_-]")
 
-    /** Offset search form without spaces/colons and leading zeros, so "gmt+8" matches "GMT+08:00". */
+    /** Offset search form without spaces/colons and leading zeros, so "gmt+8" matches
+     *  "GMT+08:00"; a leading utc prefix reads as gmt, the wording every label uses. */
     private fun normalizeOffsetText(text: String): String =
         text
             .lowercase()
             .replace(SEPARATOR_REGEX, "")
+            .replace(UTC_PREFIX_REGEX, "gmt")
             .replace(DIGIT_RUN_REGEX) { digits -> digits.value.dropWhile { it == '0' }.ifEmpty { "0" } }
 
     private val SEPARATOR_REGEX = Regex("[\\s:]")
+
+    private val UTC_PREFIX_REGEX = Regex("^utc")
 
     private val DIGIT_RUN_REGEX = Regex("\\d+")
 
@@ -420,7 +490,9 @@ internal object ZoneData {
 
     /**
      * CJK keywords have no word boundaries, so plain substring matching either way is right.
-     * Latin keywords match whole-word prefixes instead, so "us" hits "us" but not "austria".
+     * Latin keywords match query tokens that equal a keyword token, or prefix one by at
+     * least [MIN_KEYWORD_PREFIX] characters: whole tokens of any length hit ("us", "uk"),
+     * while 1–2 letter fragments no longer blur other countries ("uk" against "ukraine").
      */
     private fun keywordMatches(
         query: String,
@@ -432,11 +504,17 @@ internal object ZoneData {
             val keywordTokens = keywordLower.split(' ').filter { it.isNotEmpty() }
             val queryTokens = query.lowercase().split(' ').filter { it.isNotEmpty() }
 
-            queryTokens.isNotEmpty() && queryTokens.all { q -> keywordTokens.any { it.startsWith(q) } }
+            queryTokens.isNotEmpty() &&
+                queryTokens.all { q ->
+                    keywordTokens.any { it == q || (q.length >= MIN_KEYWORD_PREFIX && it.startsWith(q)) }
+                }
         } else {
             keywordLower.contains(query) || query.contains(keywordLower)
         }
     }
+
+    /** Shortest Latin prefix that still matches a longer keyword token. */
+    private const val MIN_KEYWORD_PREFIX = 3
 
     private data class CountryZones(
         val keywords: List<String>,

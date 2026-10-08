@@ -8,8 +8,8 @@ Android 时区选择器库：一个 Activity 完成时区选择，常用时区�
 ## 特性
 
 - 默认列表展示 27 个常用时区，并覆盖**全部 GMT 偏移**（每个偏移至少一个代表），按偏移分组，东八区开头
-- 输入关键词即时搜索全部 IANA 时区：支持**显示名 / 时区 ID / 偏移 / 国家中英文名**（搜「中国」可带出大陆、港澳台与新加坡时区）；已按 IANA `backward` 文件剔除全部旧别名（如 `US/Pacific`、`Japan`、`Europe/Kiev`，旧版 tzdata 设备上无规范 ID 时自动保留改名前 ID），并剔除 `SystemV/*`、`EST` 等遗留 ID 与 `GMT0`、`Greenwich` 等冗余别名
-- 「跟随系统」选项置顶，当前选择打勾标识；选中状态对读屏（TalkBack）可见，返回箭头 RTL 自动镜像（选择页自行按系统语言解析布局方向，不依赖宿主 App 的 RTL 设置）
+- 输入关键词即时搜索全部 IANA 时区：支持**显示名 / 时区 ID / 偏移 / 国家中英文名**（搜「中国」可带出大陆、港澳台与新加坡时区），偏移搜索支持 `gmt`/`utc` 前缀（`gmt+8`、`GMT +8`、`utc-5` 均可）；已按 IANA `backward` 文件剔除全部旧别名（如 `US/Pacific`、`Japan`、`Europe/Kiev`，旧版 tzdata 设备上无规范 ID 时自动保留改名前 ID），并剔除 `SystemV/*`、`EST` 等遗留 ID 与 `GMT0`、`Greenwich` 等冗余别名
+- 「跟随系统」选项置顶，当前选择打勾标识（传入旧别名 ID 如 `US/Pacific` 会自动映射到对应展示项）；选中状态对读屏（TalkBack）可见，返回箭头 RTL 自动镜像（选择页自行按系统语言解析布局方向，不依赖宿主 App 的 RTL 设置）
 - 自动适配系统深色模式（内置深浅两套配色，均可覆盖定制）
 - 完整适配 edge-to-edge：状态栏、导航栏与键盘 inset 自动处理，Android 15 以下系统也显式启用边到边，不受宿主 targetSdk 影响
 - 支持定制强调色（头部背景、选中勾、状态栏图标自动适配深浅）与页面标题
@@ -87,6 +87,13 @@ pickerLauncher.launch(
 
 ### 未发布
 
+- 修复偏移搜索误报：`gmt+8`、`utc-5` 等带符号偏移查询只按偏移标签匹配，不再文本匹配时区 ID——`Etc/GMT+8`（实际 UTC−8）不再混入 +8 的搜索结果；`utc+2` 写法现同样支持按偏移命中（前缀统一按 GMT 标签解析），无符号写法（`gmt8` 命中 `Etc/GMT-8`）与整段 ID 搜索（`etc/gmt+8`）行为不变
+- 修复传入旧别名或冗余 ID（`US/Pacific`、`Asia/Calcutta`、`Etc/UTC`、`Greenwich` 等）时选中项无勾选、无定位：比对前先解析为当前设备列表实际展示的 ID；反向同样处理——新 ID 在旧 tzdata 设备上回退到改名前 ID（`Europe/Kyiv` → `Europe/Kiev`）
+- 修复横屏下侧边挖孔 / 侧边导航条遮挡内容：横向 inset 现参与头部与卡片的水平内边距
+- 修复 `uk` 搜索误报乌克兰：拉丁关键词前缀匹配现要求整词相等或至少 3 字符前缀（`united`、`ame` 等行为不变，1–2 字母碎片不再命中其它国家）
+- 返回键增加按压涟漪反馈；自定义强调色同步搜索光标颜色（Android 13+，更低版本沿用默认强调色光标）
+- 分组最后一条与下一组标题之间不再绘制分隔线，由标题自身间距完成分组分隔
+- 根目录 Gradle 脚本（`build.gradle.kts`、`settings.gradle.kts`）纳入 Spotless/ktlint 检查，随 CI 的 `gradlew build` 一并执行
 - 修复含空格/连字符的英文城市名搜不到时区：文本搜索统一忽略空格、下划线与连字符（`new york` 命中 `America/New_York`，`ho chi minh` 命中 `Asia/Ho_Chi_Minh`，`port au prince` 命中 `America/Port-au-Prince`）
 - `androidx.activity` 依赖改为 `api` 作用域：`ZonePickerContract` 公共签名暴露的 `ActivityResultContract` 现在进入消费者编译类路径，不再依赖宿主自带 appcompat 传递
 - 补删 `US/Pacific-New` 遗留链接（tzdb 2020a 起已删除，旧 tzdata 设备上会与 `America/Los_Angeles` 重复显示）
@@ -124,7 +131,7 @@ pickerLauncher.launch(
 ### v1.0.0（2026-08-23）
 
 - 初始版本：常用时区分组列表 + 全量搜索 + 跟随系统选项，Activity Result 回传
-- 类型安全的 [`ZonePickerContract`](zonepicker/src/main/kotlin/com/github/kamiiroawase/zonepicker/ZonePickerContract.kt)（`ZonePickerRequest` / `ZonePickerResult`），结果可区分「选中 / 跟随系统 / 取消」
+- 类型安全的 [`ZonePickerContract`](zonepicker/src/main/kotlin/io/github/kamiiroawase/zonepicker/ZonePickerContract.kt)（`ZonePickerRequest` / `ZonePickerResult`），结果可区分「选中 / 跟随系统 / 取消」
 - `ZonePickerViewModel`：时区快照跨配置变更缓存，DST 快照 30 分钟过期自动重建
 - 深色模式：内置深浅两套配色，随系统切换，可整体覆盖
 - 搜索：内置中英文国家关键词表（约 50 国）、GMT 偏移搜索（`gmt+8` 等免补零写法均可命中）、剔除 GMT0 / Greenwich / EST 等冗余别名与遗留 ID；搜索框带一键清除按钮
@@ -136,7 +143,7 @@ pickerLauncher.launch(
 
 - **搜索范围**：支持时区显示名、时区 ID（英文）、GMT 偏移与内置国家表中英文名。中文城市名（如「上海」）暂不可搜——请用英文城市名（如 `shanghai`）或国家名代替；国家表未收录的国家同理。已被剔除的旧别名 ID（如 `Asia/Saigon`、`Asia/Calcutta`）不可搜——请用其规范 ID 或对应城市名。
 - **时区显示名语言**：默认按简体中文生成。宿主本地化 `zp_*` 字符串时时区名会跟随 App 语言（含 `AppCompatDelegate` 应用内语言切换），但需保证默认 `values/`（保持中文）与目标语言的 `values-<locale>/` 同时提供，仅覆盖默认 `values/` 为其他语言时时区名仍为中文。
-- **无效入参**：传入不存在的 `selectedZoneId` 时，列表中不会有任何选中标记（也不会回退为「跟随系统」）。
+- **无效入参**：传入的 `selectedZoneId` 会先解析为当前列表实际展示的 ID——IANA 旧别名（`US/Pacific`）与隐藏的 UTC/GMT 冗余别名（`Etc/UTC`）自动映射到对应展示项，新 ID 在旧 tzdata 设备上回退到改名前 ID；解析后仍不在列表中的 ID（如 `EST`、`SystemV/*` 或拼写错误）不显示任何选中标记（也不会回退为「跟随系统」）。
 
 ## 开发
 
