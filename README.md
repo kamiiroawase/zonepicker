@@ -23,7 +23,7 @@ Android 时区选择器库：一个 Activity 完成时区选择，常用时区�
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:2.1.0")
+    implementation("io.github.kamiiroawase:zonepicker:2.2.0")
 }
 ```
 
@@ -85,7 +85,7 @@ pickerLauncher.launch(
 
 ## 更新日志
 
-### 未发布
+### v2.2.0（2026-10-08）
 
 - 修复宿主应用声明 `android:supportsRtl="true"` 时引入本库导致 manifest 合并失败、无法构建的问题：库 manifest 不再声明 `supportsRtl`——库声明的任何值都会并入宿主 manifest，与宿主自身的取值冲突时即为合并错误；选择页的 RTL 布局方向本就由 Activity 运行时按 locale 解析，行为不变
 - 浅色模式次要文字与图标（时区 ID 副标题、「无匹配时区」、搜索/清除图标）对比度提升至 WCAG AA（约 2.8:1 → 4.6:1）：`zpTextSecondary` 浅色值 `#9A9A9A` → `#757575`，并新增深色模式同名夜间值 `#9A9A9A`（保持原 5.9:1 对比度；单一灰值无法在深浅两种底色上同时达标）；覆盖该资源的接入方现需连同 `values-night/` 一并覆盖才会全局生效
