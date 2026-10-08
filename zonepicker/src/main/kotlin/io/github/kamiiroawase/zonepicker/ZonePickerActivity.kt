@@ -286,6 +286,10 @@ class ZonePickerActivity : AppCompatActivity() {
             }
         }
 
+        // The spinner stands in for the list until the first snapshot lands; a stale-triggered
+        // rebuild never resurrects it, as the current snapshot stays rendered meanwhile
+        binding.loadingIndicator.isVisible = snapshot == null
+
         // An empty list while the snapshot is still loading is not a "no result" state
         binding.emptyText.isVisible = snapshot != null && rows.isEmpty()
 

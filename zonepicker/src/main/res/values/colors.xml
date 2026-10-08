@@ -6,7 +6,9 @@
     <color name="zpSurface">#FFFFFF</color>
     <color name="zpTextStrong">#000000</color>
     <color name="zpTextPrimary">#333333</color>
-    <color name="zpTextSecondary">#9A9A9A</color>
+    <!-- 4.6:1 on the light surface — WCAG AA for the zone-ID subtitle and no-result text;
+         a night variant keeps the dark-mode gray, as no single value clears AA on both -->
+    <color name="zpTextSecondary">#757575</color>
     <!-- 4.6:1 on the light surface — WCAG AA for the search hint -->
     <color name="zpTextHint">#757575</color>
     <color name="zpDivider">#F0F0F0</color>

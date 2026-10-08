@@ -32,7 +32,9 @@ internal object ZoneData {
         return "GMT$sign%02d:%02d".format(Locale.ROOT, absSeconds / 3600, absSeconds % 3600 / 60)
     }
 
-    /** Circular offset key starting at GMT+08: +08 first, then +09…+14, wrapping back to -12…+07. */
+    /** Circular offset key starting at GMT+08: +08…+11, then +12 with −12, +13 with −11 and
+     *  +14 with −10 (offsets 24h apart share a slot — the same wall-clock time), then −09…−01
+     *  and +00…+07. */
     fun wrapOffset(offsetSeconds: Int): Int = (offsetSeconds - 8 * 3600).mod(24 * 3600)
 
     /** All zones sorted by circular offset then display name; offsets snapshot at nowMillis (DST aware). */

@@ -175,6 +175,17 @@
                     android:textColor="@color/zpTextSecondary"
                     android:textSize="14sp"
                     android:visibility="gone" />
+
+                <!-- Visible at launch and until the first snapshot lands (render() flips it):
+                     the card would otherwise sit blank through the initial background build -->
+                <ProgressBar
+                    android:id="@+id/loadingIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/zpTextSecondary"
+                    android:visibility="visible" />
             </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

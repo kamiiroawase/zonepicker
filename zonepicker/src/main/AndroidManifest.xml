@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- supportsRtl stays explicitly off so the host keeps its own app-level RTL setting;
-         the picker activity resolves its own layout direction from the locale instead. -->
-    <application android:supportsRtl="false">
+    <!-- No supportsRtl here: whatever a library declares merges into the host manifest and
+         errors against an app that chose the other value (an RTL-enabled host would fail
+         to build). The picker activity resolves its own layout direction from the locale
+         at runtime instead. -->
+    <application>
         <activity
             android:name=".ZonePickerActivity"
             android:exported="false"
