@@ -25,7 +25,7 @@ internal sealed interface ZoneRow {
 }
 
 internal class ZoneAdapter(
-    private val accentColor: Int,
+    private val markColor: Int,
     private val onItemClick: (String) -> Unit,
 ) : ListAdapter<ZoneRow, RecyclerView.ViewHolder>(DIFF) {
     class HeaderViewHolder(
@@ -70,7 +70,7 @@ internal class ZoneAdapter(
                 binding.zoneNameText.text = row.title
                 binding.zoneIdText.text = row.subtitle
                 binding.zoneCheckImage.isVisible = row.selected
-                binding.zoneCheckImage.imageTintList = ColorStateList.valueOf(accentColor)
+                binding.zoneCheckImage.imageTintList = ColorStateList.valueOf(markColor)
 
                 // No divider under the list's last row, nor above a group header: the header's
                 // own top padding separates the groups instead of hanging off the previous one.

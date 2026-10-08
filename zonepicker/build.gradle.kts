@@ -91,8 +91,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.livedata)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material)
+    testImplementation(libs.androidx.core.testing)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 // The release workflow supplies the GPG key as ORG_GRADLE_PROJECT_signingInMemoryKey and

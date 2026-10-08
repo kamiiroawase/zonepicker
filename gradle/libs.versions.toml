@@ -6,6 +6,8 @@ androidx-constraintlayout = "2.2.2"
 androidx-core-ktx = "1.19.1"
 androidx-lifecycle = "2.11.0"
 androidx-recyclerview = "1.4.0"
+archCoreTesting = "2.2.0"
+coroutines = "1.10.2"
 junit = "4.13.2"
 material = "1.14.0"
 spotless = "8.10.3"
@@ -16,10 +18,13 @@ androidx-activity = { module = "androidx.activity:activity", version.ref = "acti
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidx-constraintlayout" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core-ktx" }
+androidx-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "archCoreTesting" }
 androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidx-recyclerview" }
 junit = { module = "junit:junit", version.ref = "junit" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 
 [plugins]

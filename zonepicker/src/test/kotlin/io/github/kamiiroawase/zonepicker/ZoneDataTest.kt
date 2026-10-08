@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
+import java.util.TimeZone
 
 class ZoneDataTest {
     @Test
@@ -71,6 +72,14 @@ class ZoneDataTest {
     }
 
     @Test
+    fun `country search accepts hyphen and underscore spellings`() {
+        assertTrue(ZoneData.countryZoneIds("united-states").contains("America/New_York"))
+        assertTrue(ZoneData.countryZoneIds("hong-kong").contains("Asia/Hong_Kong"))
+        assertTrue(ZoneData.countryZoneIds("south_korea").contains("Asia/Seoul"))
+        assertTrue(ZoneData.countryZoneIds("new-zealand").contains("Pacific/Auckland"))
+    }
+
+    @Test
     fun `country search empty for unknown keyword`() {
         assertTrue(ZoneData.countryZoneIds("zzz不存在zzz").isEmpty())
     }
@@ -117,6 +126,41 @@ class ZoneDataTest {
         assertTrue(ZoneData.matches(kolkata, "gmt+530"))
         assertFalse(ZoneData.matches(shanghai, "gmt+9"))
         assertFalse(ZoneData.matches(kolkata, "gmt+5:00"))
+    }
+
+    @Test
+    fun `positive hour queries match exactly that hour`() {
+        val paris = ZoneData.Zone("Europe/Paris", "中欧时间", 3600)
+        val auckland = ZoneData.Zone("Pacific/Auckland", "新西兰标准时间", 13 * 3600)
+        val kiritimati = ZoneData.Zone("Pacific/Kiritimati", "莱恩群岛时间", 14 * 3600)
+
+        assertTrue(ZoneData.matches(paris, "gmt+1"))
+        assertFalse(ZoneData.matches(auckland, "gmt+1"))
+        assertFalse(ZoneData.matches(kiritimati, "gmt+1"))
+        assertTrue(ZoneData.matches(auckland, "gmt+13"))
+        assertTrue(ZoneData.matches(kiritimati, "gmt+14"))
+        assertFalse(ZoneData.matches(paris, "gmt+13"))
+    }
+
+    @Test
+    fun `negative hour queries match exactly that hour`() {
+        val azores = ZoneData.Zone("Atlantic/Azores", "亚速尔群岛时间", -3600)
+        val honolulu = ZoneData.Zone("Pacific/Honolulu", "夏威夷标准时间", -10 * 3600)
+        val midway = ZoneData.Zone("Pacific/Midway", "萨摩亚时间", -11 * 3600)
+
+        assertTrue(ZoneData.matches(azores, "gmt-1"))
+        assertFalse(ZoneData.matches(honolulu, "gmt-1"))
+        assertFalse(ZoneData.matches(midway, "gmt-1"))
+        assertTrue(ZoneData.matches(honolulu, "gmt-10"))
+        assertTrue(ZoneData.matches(midway, "gmt-11"))
+    }
+
+    @Test
+    fun `malformed minute fragments keep their substring hits`() {
+        val kolkata = ZoneData.Zone("Asia/Kolkata", "印度标准时间", 5 * 3600 + 1800)
+
+        // Typed mid-way to "5:30": not parseable, falls back to the old label substring match
+        assertTrue(ZoneData.matches(kolkata, "gmt+5:3"))
     }
 
     @Test
@@ -297,32 +341,37 @@ class ZoneDataTest {
 
     @Test
     fun `buildZones default list contains no backward or SystemV aliases`() {
-        val shown = ZoneData.buildZones(0L).map { it.zoneId }
+        val ids = TimeZone.getAvailableIDs()
+        val availableIds = ids.toHashSet()
+        val shown = ZoneData.buildZones(0L, ids = ids).map { it.zoneId }
 
-        val aliases =
-            listOf(
-                "Japan",
-                "Hongkong",
-                "Singapore",
-                "Turkey",
-                "W-SU",
-                "US/Pacific",
-                "US/Eastern",
-                "Canada/Pacific",
-                "Mexico/BajaNorte",
-                "Brazil/East",
-                "Chile/Continental",
-                "Australia/ACT",
-                "America/Buenos_Aires",
-                "Asia/Katmandu",
-                "Asia/Saigon",
-                "Europe/Kiev",
-                "SystemV/AST4",
-            )
+        // An alias hides only while its canonical zone exists on this tzdata — assert exactly
+        // that rule, so a future tzdb rename cannot false-fail this test on exotic JVMs
+        listOf(
+            "Japan" to "Asia/Tokyo",
+            "Hongkong" to "Asia/Hong_Kong",
+            "Singapore" to "Asia/Singapore",
+            "Turkey" to "Europe/Istanbul",
+            "W-SU" to "Europe/Moscow",
+            "US/Pacific" to "America/Los_Angeles",
+            "US/Eastern" to "America/New_York",
+            "Canada/Pacific" to "America/Vancouver",
+            "Mexico/BajaNorte" to "America/Tijuana",
+            "Brazil/East" to "America/Sao_Paulo",
+            "Chile/Continental" to "America/Santiago",
+            "Australia/ACT" to "Australia/Sydney",
+            "America/Buenos_Aires" to "America/Argentina/Buenos_Aires",
+            "Asia/Katmandu" to "Asia/Kathmandu",
+            "Asia/Saigon" to "Asia/Ho_Chi_Minh",
+            "Europe/Kiev" to "Europe/Kyiv",
+        ).forEach { (alias, canonical) ->
+            assertTrue(alias !in shown || canonical !in availableIds)
+        }
 
-        assertTrue(shown.none { it in aliases })
-        assertTrue(shown.contains("Asia/Tokyo"))
-        assertTrue(shown.contains("Europe/Kyiv"))
+        assertTrue(shown.none { it.startsWith("SystemV/") })
+
+        if ("Asia/Tokyo" in availableIds) assertTrue(shown.contains("Asia/Tokyo"))
+        if ("Europe/Kyiv" in availableIds) assertTrue(shown.contains("Europe/Kyiv"))
     }
 
     @Test

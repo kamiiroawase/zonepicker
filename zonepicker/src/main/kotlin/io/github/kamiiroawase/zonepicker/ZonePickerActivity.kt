@@ -10,7 +10,6 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -35,6 +34,13 @@ class ZonePickerActivity : AppCompatActivity() {
 
     private var accentColor: Int = 0
 
+    /** True when the accent came from the launch intent rather than the zpPrimaryColor
+     *  resource: only a runtime accent owns the header's black/white foreground pairing. */
+    private var runtimeAccent = false
+
+    /** Checkmark and cursor color: the accent itself while it contrasts with the surface. */
+    private var markColor: Int = 0
+
     private val viewModel by lazy { ViewModelProvider(this)[ZonePickerViewModel::class.java] }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,9 +60,14 @@ class ZonePickerActivity : AppCompatActivity() {
                 .getStringExtra(ZonePicker.EXTRA_ZONE_ID)
                 ?.let { ZoneData.resolveDisplayZoneId(it) }
 
-        accentColor = intent
-            .getIntExtra(ZonePicker.EXTRA_ACCENT_COLOR, ACCENT_UNSET)
-            .takeIf { it != ACCENT_UNSET } ?: getColor(R.color.zpPrimaryColor)
+        val passedAccent =
+            intent
+                .getIntExtra(ZonePicker.EXTRA_ACCENT_COLOR, ACCENT_UNSET)
+                .takeIf { it != ACCENT_UNSET }
+
+        runtimeAccent = passedAccent != null
+
+        accentColor = passedAccent ?: getColor(R.color.zpPrimaryColor)
 
         binding = ActivityZonePickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -119,7 +130,7 @@ class ZonePickerActivity : AppCompatActivity() {
 
         binding.searchClear.setOnClickListener { binding.searchEditText.setText("") }
 
-        adapter = ZoneAdapter(accentColor) { zoneId -> select(zoneId) }
+        adapter = ZoneAdapter(markColor) { zoneId -> select(zoneId) }
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
@@ -152,20 +163,37 @@ class ZonePickerActivity : AppCompatActivity() {
     private fun applyAccent() {
         binding.header.setBackgroundColor(accentColor)
 
-        binding.followSystemCheck.imageTintList = ColorStateList.valueOf(accentColor)
+        // A runtime accent repaints the whole header, so its title and back arrow take the
+        // black/white side that reads over it; the resource path keeps the host's zpOnAccent
+        // pairing untouched.
+        if (runtimeAccent) {
+            val onAccent = AccentColors.onAccentColor(accentColor)
+
+            binding.headerTitle.setTextColor(onAccent)
+            binding.buttonBack.imageTintList = ColorStateList.valueOf(onAccent)
+        }
+
+        // Selection marks drawn on zpSurface (checkmark, cursor) keep the accent while it
+        // contrasts with that surface; a too-light accent falls back to the row's own text
+        // color, which reads in both day and night modes.
+        markColor =
+            AccentColors.markColor(accentColor, getColor(R.color.zpSurface), getColor(R.color.zpTextPrimary))
+
+        binding.followSystemCheck.imageTintList = ColorStateList.valueOf(markColor)
 
         // The theme's zp_cursor drawable carries the default zpPrimaryColor; retint it to the
-        // caller's accent where the platform exposes the cursor drawable (API 33+). Earlier
+        // mark color where the platform exposes the cursor drawable (API 33+). Earlier
         // versions keep the default-colored cursor.
         if (Build.VERSION.SDK_INT >= 33) {
             binding.searchEditText.textCursorDrawable
                 ?.mutate()
-                ?.setTint(accentColor)
+                ?.setTint(markColor)
         }
 
+        // Status-bar icons flip on the same light/dark edge as the header's own chrome
         WindowCompat
             .getInsetsController(window, window.decorView)
-            .isAppearanceLightStatusBars = ColorUtils.calculateLuminance(accentColor) > 0.5
+            .isAppearanceLightStatusBars = AccentColors.onAccentColor(accentColor) == Color.BLACK
     }
 
     /** Header pads below the status bar; list content pads above the nav bar and keyboard.

@@ -408,7 +408,7 @@ internal object ZoneData {
     ): Boolean {
         if (query.isEmpty()) return true
 
-        return matchesCore(zone, searchableText(query), normalizeOffsetText(query))
+        return matchesCore(zone, searchableText(query), offsetSearch(query))
     }
 
     /** Bulk matching for a whole list; the query is normalized once instead of once per zone. */
@@ -420,15 +420,15 @@ internal object ZoneData {
         if (query.isEmpty()) return zones
 
         val textQuery = searchableText(query)
-        val offsetQuery = normalizeOffsetText(query)
+        val offsetSearch = offsetSearch(query)
 
-        return zones.filter { matchesCore(it, textQuery, offsetQuery) || it.zoneId in extraZoneIds }
+        return zones.filter { matchesCore(it, textQuery, offsetSearch) || it.zoneId in extraZoneIds }
     }
 
     private fun matchesCore(
         zone: Zone,
         textQuery: String?,
-        offsetQuery: String,
+        offsetSearch: OffsetSearch,
     ): Boolean =
         (
             textQuery != null &&
@@ -437,7 +437,67 @@ internal object ZoneData {
                         normalizeZoneText(zone.displayName).contains(textQuery)
                 )
         ) ||
-            normalizeOffsetText(offsetLabel(zone.offsetSeconds)).contains(offsetQuery)
+            offsetSearch.matches(zone.offsetSeconds)
+
+    /** One query's offset-search arm: a well-formed `gmt±H[:MM]` query compares sign, hour
+     *  and minute exactly — `gmt+1` no longer hits GMT+10…+14 the way substring matching did —
+     *  while anything else keeps substring-matching the zero-stripped label text, so bare
+     *  digits like "80" still hit GMT+08:00 and a malformed query caught mid-typing
+     *  ("gmt+5:3") keeps its old hits. */
+    private fun offsetSearch(query: String): OffsetSearch =
+        parseOffsetQuery(query)?.let { OffsetSearch.Parsed(it) } ?: OffsetSearch.Text(normalizeOffsetText(query))
+
+    private sealed interface OffsetSearch {
+        fun matches(offsetSeconds: Int): Boolean
+
+        data class Parsed(
+            val query: OffsetQuery,
+        ) : OffsetSearch {
+            override fun matches(offsetSeconds: Int): Boolean {
+                val absSeconds = abs(offsetSeconds)
+
+                return query.negative == (offsetSeconds < 0) &&
+                    query.hours == absSeconds / 3600 &&
+                    (query.minutes == null || query.minutes == absSeconds % 3600 / 60)
+            }
+        }
+
+        data class Text(
+            val normalized: String,
+        ) : OffsetSearch {
+            override fun matches(offsetSeconds: Int): Boolean = normalizeOffsetText(offsetLabel(offsetSeconds)).contains(normalized)
+        }
+    }
+
+    /** A parsed `gmt/utc ± H[:MM]` query: sign, whole hours, optional exact minutes. */
+    private data class OffsetQuery(
+        val negative: Boolean,
+        val hours: Int,
+        val minutes: Int?,
+    )
+
+    /** Parses the query lowercased with spaces dropped; zero padding is free ("05", "08:00")
+     *  and the minutes may be glued to the hours ("530") or follow a colon ("5:30"). Null for
+     *  anything else, including malformed minute fragments ("5:3"). */
+    private fun parseOffsetQuery(query: String): OffsetQuery? {
+        val match = OFFSET_QUERY_REGEX.matchEntire(query.lowercase().replace(SPACE_REGEX, "")) ?: return null
+
+        // groupValues yields "" for the alternation branch that did not participate
+        val minutes =
+            listOf(match.groupValues[3], match.groupValues[4])
+                .firstOrNull { it.isNotEmpty() }
+                ?.toInt()
+
+        return OffsetQuery(
+            negative = match.groupValues[1] == "-",
+            hours = match.groupValues[2].toInt(),
+            minutes = minutes,
+        )
+    }
+
+    private val OFFSET_QUERY_REGEX = Regex("(?:gmt|utc)([+-])(\\d{1,2})(?::(\\d{2})|(\\d{2}))?")
+
+    private val SPACE_REGEX = Regex("\\s+")
 
     /** The query's text-search form, or null when the query is offset-shaped ("gmt+8",
      *  "utc-05:30"): those match only by offset label, because zone IDs like Etc/GMT+8
@@ -493,6 +553,8 @@ internal object ZoneData {
      * Latin keywords match query tokens that equal a keyword token, or prefix one by at
      * least [MIN_KEYWORD_PREFIX] characters: whole tokens of any length hit ("us", "uk"),
      * while 1–2 letter fragments no longer blur other countries ("uk" against "ukraine").
+     * Tokens split on the same separator set the text search ignores, so "united-states"
+     * and "hong-kong" spell like "united states" and "hong kong".
      */
     private fun keywordMatches(
         query: String,
@@ -501,8 +563,8 @@ internal object ZoneData {
         val keywordLower = keyword.lowercase()
 
         return if (keywordLower.any { it in 'a'..'z' }) {
-            val keywordTokens = keywordLower.split(' ').filter { it.isNotEmpty() }
-            val queryTokens = query.lowercase().split(' ').filter { it.isNotEmpty() }
+            val keywordTokens = keywordLower.split(WORD_SEPARATOR_REGEX).filter { it.isNotEmpty() }
+            val queryTokens = query.lowercase().split(WORD_SEPARATOR_REGEX).filter { it.isNotEmpty() }
 
             queryTokens.isNotEmpty() &&
                 queryTokens.all { q ->
@@ -512,6 +574,9 @@ internal object ZoneData {
             keywordLower.contains(query) || query.contains(keywordLower)
         }
     }
+
+    /** Token boundary for Latin country keywords: the separators the zone-text search strips. */
+    private val WORD_SEPARATOR_REGEX = Regex("[\\s_-]")
 
     /** Shortest Latin prefix that still matches a longer keyword token. */
     private const val MIN_KEYWORD_PREFIX = 3
