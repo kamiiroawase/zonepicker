@@ -25,6 +25,27 @@ class ZoneDataTest {
     }
 
     @Test
+    fun `offset label and label search keep latin digits under local-digit locales`() {
+        val originalLocale = Locale.getDefault()
+
+        // ar-EG renders %d with Arabic-Indic digits when it drives String.format
+        Locale.setDefault(Locale.forLanguageTag("ar-EG"))
+
+        try {
+            assertEquals("GMT+08:00", ZoneData.offsetLabel(8 * 3600))
+
+            // The label-shaped offset search arm must keep matching Latin-digit queries
+            val shanghai = ZoneData.Zone("Asia/Shanghai", "中国标准时间", 8 * 3600)
+            val kolkata = ZoneData.Zone("Asia/Kolkata", "印度标准时间", 5 * 3600 + 1800)
+
+            assertTrue(ZoneData.matches(shanghai, "80"))
+            assertTrue(ZoneData.matches(kolkata, "gmt+5:3"))
+        } finally {
+            Locale.setDefault(originalLocale)
+        }
+    }
+
+    @Test
     fun `country search covers chinese region by chinese and english name`() {
         val byChinese = ZoneData.countryZoneIds("中国")
         val byEnglish = ZoneData.countryZoneIds("china")

@@ -7,6 +7,7 @@
     <color name="zpTextStrong">#000000</color>
     <color name="zpTextPrimary">#333333</color>
     <color name="zpTextSecondary">#9A9A9A</color>
-    <color name="zpTextHint">#B3B3B3</color>
+    <!-- 4.6:1 on the light surface — WCAG AA for the search hint -->
+    <color name="zpTextHint">#757575</color>
     <color name="zpDivider">#F0F0F0</color>
 </resources>

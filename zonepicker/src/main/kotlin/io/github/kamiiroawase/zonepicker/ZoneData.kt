@@ -10,15 +10,26 @@ internal object ZoneData {
         val zoneId: String,
         val displayName: String,
         val offsetSeconds: Int,
-    )
+    ) {
+        /** Search keys normalized once at construction — [buildZones] creates each zone once
+         *  off the main thread, so per-keystroke filtering stops re-normalizing every text. */
+        val idKey: String = normalizeZoneText(zoneId)
 
-    /** GMT offset label, e.g. GMT+08:00. */
+        val nameKey: String = normalizeZoneText(displayName)
+
+        /** This zone's offset label in [normalizeOffsetText] form. */
+        val offsetKey: String = normalizeOffsetText(offsetLabel(offsetSeconds))
+    }
+
+    /** GMT offset label, e.g. GMT+08:00. Formatted under [Locale.ROOT]: the default locale
+     *  would render %d with its local digits (GMT+٠٨:٠٠ under Arabic), which neither the
+     *  header text nor Latin-digit search queries expect. */
     fun offsetLabel(seconds: Int): String {
         val sign = if (seconds < 0) "-" else "+"
 
         val absSeconds = abs(seconds)
 
-        return "GMT$sign%02d:%02d".format(absSeconds / 3600, absSeconds % 3600 / 60)
+        return "GMT$sign%02d:%02d".format(Locale.ROOT, absSeconds / 3600, absSeconds % 3600 / 60)
     }
 
     /** Circular offset key starting at GMT+08: +08 first, then +09…+14, wrapping back to -12…+07. */
@@ -433,11 +444,11 @@ internal object ZoneData {
         (
             textQuery != null &&
                 (
-                    normalizeZoneText(zone.zoneId).contains(textQuery) ||
-                        normalizeZoneText(zone.displayName).contains(textQuery)
+                    zone.idKey.contains(textQuery) ||
+                        zone.nameKey.contains(textQuery)
                 )
         ) ||
-            offsetSearch.matches(zone.offsetSeconds)
+            offsetSearch.matches(zone)
 
     /** One query's offset-search arm: a well-formed `gmt±H[:MM]` query compares sign, hour
      *  and minute exactly — `gmt+1` no longer hits GMT+10…+14 the way substring matching did —
@@ -448,15 +459,15 @@ internal object ZoneData {
         parseOffsetQuery(query)?.let { OffsetSearch.Parsed(it) } ?: OffsetSearch.Text(normalizeOffsetText(query))
 
     private sealed interface OffsetSearch {
-        fun matches(offsetSeconds: Int): Boolean
+        fun matches(zone: Zone): Boolean
 
         data class Parsed(
             val query: OffsetQuery,
         ) : OffsetSearch {
-            override fun matches(offsetSeconds: Int): Boolean {
-                val absSeconds = abs(offsetSeconds)
+            override fun matches(zone: Zone): Boolean {
+                val absSeconds = abs(zone.offsetSeconds)
 
-                return query.negative == (offsetSeconds < 0) &&
+                return query.negative == (zone.offsetSeconds < 0) &&
                     query.hours == absSeconds / 3600 &&
                     (query.minutes == null || query.minutes == absSeconds % 3600 / 60)
             }
@@ -465,7 +476,7 @@ internal object ZoneData {
         data class Text(
             val normalized: String,
         ) : OffsetSearch {
-            override fun matches(offsetSeconds: Int): Boolean = normalizeOffsetText(offsetLabel(offsetSeconds)).contains(normalized)
+            override fun matches(zone: Zone): Boolean = zone.offsetKey.contains(normalized)
         }
     }
 

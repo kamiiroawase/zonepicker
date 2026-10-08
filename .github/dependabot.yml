@@ -6,6 +6,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # The gradle ecosystem above covers libs.versions.toml and build scripts only;
+  # gradle-version keeps the wrapper's distributionUrl on new Gradle releases
+  - package-ecosystem: gradle-version
+    directory: /
+    schedule:
+      interval: weekly
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -34,7 +34,17 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.pickButton.setOnClickListener {
-            pickerLauncher.launch(ZonePickerRequest(selectedZoneId = zoneId))
+            pickerLauncher.launch(
+                ZonePickerRequest(
+                    selectedZoneId = zoneId,
+                    accentColor = if (binding.accentToggle.isChecked) CUSTOM_ACCENT_COLOR else null,
+                    title =
+                        binding.titleInput.text
+                            .toString()
+                            .trim()
+                            .takeIf { it.isNotEmpty() },
+                ),
+            )
         }
 
         updateText()
@@ -58,5 +68,9 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         private const val STATE_ZONE_ID = "zoneId"
+
+        /** The light accent the demo toggle passes — also exercises the runtime-accent
+         *  black header chrome the library picks for it. */
+        private const val CUSTOM_ACCENT_COLOR = 0xFF3F51B5.toInt()
     }
 }

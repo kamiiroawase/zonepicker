@@ -13,6 +13,34 @@
         android:textColor="@color/demoText"
         android:textSize="16sp" />
 
+    <!-- Demonstrates the title parameter: a non-empty input becomes the picker's title -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/titleInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:hint="@string/demo_custom_title_hint">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/titleInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:maxLines="1"
+            android:singleLine="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Demonstrates the accentColor parameter: checked passes a light accent that also
+         exercises the black header chrome the runtime accent path picks -->
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/accentToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/demo_custom_accent"
+        android:textSize="14sp" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/pickButton"
         android:layout_width="wrap_content"

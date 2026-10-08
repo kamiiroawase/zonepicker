@@ -3,4 +3,6 @@
     <string name="demo_pick">选择时区</string>
     <string name="demo_follow_system">跟随系统</string>
     <string name="demo_current">当前：%1$s</string>
+    <string name="demo_custom_title_hint">自定义标题（可选）</string>
+    <string name="demo_custom_accent">自定义强调色（#3F51B5）</string>
 </resources>

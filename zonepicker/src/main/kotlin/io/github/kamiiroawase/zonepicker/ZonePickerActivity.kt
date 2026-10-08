@@ -317,7 +317,7 @@ class ZonePickerActivity : AppCompatActivity() {
         return if (appContext.createConfigurationContext(chinese).getString(R.string.zp_title) == getString(R.string.zp_title)) {
             Locale.SIMPLIFIED_CHINESE
         } else {
-            resources.configuration.locales[0] ?: Locale.getDefault()
+            resources.configuration.locales[0]
         }
     }
 

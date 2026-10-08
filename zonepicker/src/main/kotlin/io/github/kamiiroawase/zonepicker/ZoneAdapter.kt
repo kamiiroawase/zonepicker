@@ -49,7 +49,10 @@ internal class ZoneAdapter(
         val inflater = LayoutInflater.from(parent.context)
 
         return if (viewType == TYPE_HEADER) {
-            HeaderViewHolder(ItemZoneHeaderBinding.inflate(inflater, parent, false))
+            HeaderViewHolder(ItemZoneHeaderBinding.inflate(inflater, parent, false)).also {
+                // TalkBack announces the offset band as a heading, not another line of text
+                ViewCompat.setAccessibilityHeading(it.binding.headerText, true)
+            }
         } else {
             ItemViewHolder(ItemZoneBinding.inflate(inflater, parent, false))
         }
