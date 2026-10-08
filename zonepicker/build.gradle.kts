@@ -82,7 +82,9 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.activity)
+    // api, not implementation: ZonePickerContract's signature exposes ActivityResultContract,
+    // which must reach consumers' compile classpath instead of relying on appcompat leaking it
+    api(libs.androidx.activity)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)

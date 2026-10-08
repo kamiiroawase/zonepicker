@@ -120,6 +120,33 @@ class ZoneDataTest {
     }
 
     @Test
+    fun `matches zone ids across separator spellings`() {
+        val newYork = ZoneData.Zone("America/New_York", "美国东部时间", -5 * 3600)
+        val hoChiMinh = ZoneData.Zone("Asia/Ho_Chi_Minh", "印度支那时间", 7 * 3600)
+        val portAuPrince = ZoneData.Zone("America/Port-au-Prince", "美国东部时间", -5 * 3600)
+
+        assertTrue(ZoneData.matches(newYork, "new york"))
+        assertTrue(ZoneData.matches(newYork, "New York"))
+        assertTrue(ZoneData.matches(newYork, "newyork"))
+        assertTrue(ZoneData.matches(newYork, "new_york"))
+        assertFalse(ZoneData.matches(newYork, "york new"))
+
+        assertTrue(ZoneData.matches(hoChiMinh, "ho chi minh"))
+        assertTrue(ZoneData.matches(portAuPrince, "port au prince"))
+    }
+
+    @Test
+    fun `filter finds zones by spaced city names`() {
+        val zones =
+            listOf(
+                ZoneData.Zone("America/New_York", "美国东部时间", -5 * 3600),
+                ZoneData.Zone("America/Chicago", "美国中部时间", -6 * 3600),
+            )
+
+        assertEquals(listOf("America/New_York"), ZoneData.filter(zones, "new york").map { it.zoneId })
+    }
+
+    @Test
     fun `filter matches zones and folds in extra country ids`() {
         val zones =
             listOf(
@@ -240,6 +267,7 @@ class ZoneDataTest {
                         "Japan",
                         "America/Los_Angeles",
                         "US/Pacific",
+                        "US/Pacific-New",
                         "SystemV/YST9YDT",
                         "Asia/Singapore",
                         "Singapore",

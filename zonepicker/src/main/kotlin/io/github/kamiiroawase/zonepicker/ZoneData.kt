@@ -90,8 +90,10 @@ internal object ZoneData {
 
     private val LEGACY_ZONE_ID_REGEX = Regex("^[A-Z]{3}(?:[0-9]+[A-Z]{3})?$")
 
-    /** tzdb `backward`-file aliases → their canonical zone IDs (IANA tzdb 2026e). Entries already
-     *  covered by [HIDDEN_ZONE_IDS] or [LEGACY_ZONE_ID_REGEX] are omitted; bare UTC/GMT stay visible. */
+    /** tzdb `backward`-file aliases → their canonical zone IDs (IANA tzdb 2026e), plus the one
+     *  link tzdb itself deleted (US/Pacific-New, gone since 2020a) — older devices' tzdata
+     *  still carries it. Entries already covered by [HIDDEN_ZONE_IDS] or [LEGACY_ZONE_ID_REGEX]
+     *  are omitted; bare UTC/GMT stay visible. */
     private val BACKWARD_ALIAS_TARGETS =
         mapOf(
             "Africa/Accra" to "Africa/Abidjan",
@@ -319,6 +321,7 @@ internal object ZoneData {
             "US/Michigan" to "America/Detroit",
             "US/Mountain" to "America/Denver",
             "US/Pacific" to "America/Los_Angeles",
+            "US/Pacific-New" to "America/Los_Angeles",
             "US/Samoa" to "Pacific/Pago_Pago",
             "W-SU" to "Europe/Moscow",
         )
@@ -351,14 +354,15 @@ internal object ZoneData {
         return (preferred + fillers).sortedWith(zoneOrder)
     }
 
-    /** Search matching against display name, zone ID and offset label; case-insensitive. */
+    /** Search matching against display name, zone ID and offset label; case-insensitive and
+     *  separator-insensitive ("new york" matches America/New_York). */
     fun matches(
         zone: Zone,
         query: String,
     ): Boolean {
         if (query.isEmpty()) return true
 
-        return matchesCore(zone, query.lowercase(), normalizeOffsetText(query))
+        return matchesCore(zone, normalizeZoneText(query), normalizeOffsetText(query))
     }
 
     /** Bulk matching for a whole list; the query is normalized once instead of once per zone. */
@@ -369,20 +373,27 @@ internal object ZoneData {
     ): List<Zone> {
         if (query.isEmpty()) return zones
 
-        val lower = query.lowercase()
+        val textQuery = normalizeZoneText(query)
         val offsetQuery = normalizeOffsetText(query)
 
-        return zones.filter { matchesCore(it, lower, offsetQuery) || it.zoneId in extraZoneIds }
+        return zones.filter { matchesCore(it, textQuery, offsetQuery) || it.zoneId in extraZoneIds }
     }
 
     private fun matchesCore(
         zone: Zone,
-        lowerQuery: String,
+        textQuery: String,
         offsetQuery: String,
     ): Boolean =
-        zone.zoneId.lowercase().contains(lowerQuery) ||
-            zone.displayName.lowercase().contains(lowerQuery) ||
+        normalizeZoneText(zone.zoneId).contains(textQuery) ||
+            normalizeZoneText(zone.displayName).contains(textQuery) ||
             normalizeOffsetText(offsetLabel(zone.offsetSeconds)).contains(offsetQuery)
+
+    /** Zone-text search form with every separator (spaces, underscores, hyphens) removed from
+     *  both sides of the match, so "new york", "newyork" and "new_york" all hit
+     *  America/New_York — stripping separators only merges spellings, never drops a match. */
+    private fun normalizeZoneText(text: String): String = text.lowercase().replace(ZONE_TEXT_SEPARATOR_REGEX, "")
+
+    private val ZONE_TEXT_SEPARATOR_REGEX = Regex("[\\s_-]")
 
     /** Offset search form without spaces/colons and leading zeros, so "gmt+8" matches "GMT+08:00". */
     private fun normalizeOffsetText(text: String): String =

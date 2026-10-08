@@ -85,6 +85,13 @@ pickerLauncher.launch(
 
 ## 更新日志
 
+### 未发布
+
+- 修复含空格/连字符的英文城市名搜不到时区：文本搜索统一忽略空格、下划线与连字符（`new york` 命中 `America/New_York`，`ho chi minh` 命中 `Asia/Ho_Chi_Minh`，`port au prince` 命中 `America/Port-au-Prince`）
+- `androidx.activity` 依赖改为 `api` 作用域：`ZonePickerContract` 公共签名暴露的 `ActivityResultContract` 现在进入消费者编译类路径，不再依赖宿主自带 appcompat 传递
+- 补删 `US/Pacific-New` 遗留链接（tzdb 2020a 起已删除，旧 tzdata 设备上会与 `America/Los_Angeles` 重复显示）
+- Release workflow 增加 concurrency 组（tag 重推时排队而非取消进行中的发布）；新增 Dependabot 配置（gradle 与 GitHub Actions 依赖周更）
+
 ### v2.0.0（2026-10-03）
 
 - **破坏性变更**：Maven 坐标与代码包名由 `com.github.kamiiroawase` 迁移至 `io.github.kamiiroawase`（依赖坐标 `io.github.kamiiroawase:zonepicker`，包名 `io.github.kamiiroawase.zonepicker`），接入方需同步更新依赖坐标与 `import`
