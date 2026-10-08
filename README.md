@@ -23,7 +23,7 @@ Android 时区选择器库：一个 Activity 完成时区选择，常用时区�
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:2.0.0")
+    implementation("io.github.kamiiroawase:zonepicker:2.1.0")
 }
 ```
 
@@ -85,8 +85,13 @@ pickerLauncher.launch(
 
 ## 更新日志
 
-### 未发布
+### v2.1.0（2026-10-08）
 
+- 修复自定义浅色强调色下页头内容与勾选标记不可见：运行时传入的强调色现按亮度自动为页头标题与返回箭头选黑/白前景；勾选标记与搜索光标在与背景对比度不足（WCAG 图形阈值 3:1）时回退为正文色（深浅色模式各自适配）；通过资源覆盖（`zpPrimaryColor` / `zpOnAccent`）定制的路径行为不变
+- 修复带符号偏移搜索的小时前缀误报：`gmt+1` 不再命中 GMT+10~+14（`gmt-1` 同理不再命中 −10~−12），带分钟时分钟需精确匹配；非规范输入（如输入到一半的 `gmt+5:3`）与无符号写法（`80`、`gmt8`）行为不变
+- 国家搜索现接受连字符/下划线写法：`united-states`、`hong-kong`、`south_korea` 与空格写法等价，与文本搜索的分隔符规则一致
+- `ZonePickerViewModel` 改用 `viewModelScope` 协程构建时区快照：构建随 ViewModel 清除自动取消，语言变更即时替换进行中的构建（不再先落地一份旧语言快照）；构建调度器与时钟改为可注入
+- 新增单元测试：ViewModel（快照缓存、语言变更重建、过期重建）、强调色取色，及偏移搜索精确匹配与国家搜索分隔符用例；tzdata 相关断言改为按「别名—规范 ID 存在性」判定，不再依赖本机 JDK 的 tzdb 具体版本
 - 修复偏移搜索误报：`gmt+8`、`utc-5` 等带符号偏移查询只按偏移标签匹配，不再文本匹配时区 ID——`Etc/GMT+8`（实际 UTC−8）不再混入 +8 的搜索结果；`utc+2` 写法现同样支持按偏移命中（前缀统一按 GMT 标签解析），无符号写法（`gmt8` 命中 `Etc/GMT-8`）与整段 ID 搜索（`etc/gmt+8`）行为不变
 - 修复传入旧别名或冗余 ID（`US/Pacific`、`Asia/Calcutta`、`Etc/UTC`、`Greenwich` 等）时选中项无勾选、无定位：比对前先解析为当前设备列表实际展示的 ID；反向同样处理——新 ID 在旧 tzdata 设备上回退到改名前 ID（`Europe/Kyiv` → `Europe/Kiev`）
 - 修复横屏下侧边挖孔 / 侧边导航条遮挡内容：横向 inset 现参与头部与卡片的水平内边距
