@@ -44,7 +44,7 @@ jobs:
           # clone misses the tags
           fetch-depth: 0
 
-      # The README documents the released coordinates in the dependency snippet; a
+      # The READMEs document the released coordinates in the dependency snippet; a
       # forgotten bump ships stale versions to every reader until someone notices. Fail
       # the release instead: the snippet must reference the tag's version and must have
       # dropped the previous tag's. The match is token-anchored — a plain fixed-string
@@ -54,7 +54,7 @@ jobs:
       - name: Check README version coordinates match the tag
         uses: ./.github/actions/check-docs-version
         with:
-          docs: README.md
+          docs: README.md README.en.md
           coordinate-prefix: "zonepicker:"
           reverse: true
 

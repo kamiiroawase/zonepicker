@@ -1,19 +1,22 @@
 # ZonePicker
 
-[![Build](https://github.com/kamiiroawase/zonepicker/actions/workflows/build.yml/badge.svg)](https://github.com/kamiiroawase/zonepicker/actions)
-[![License: Unlicense](https://img.shields.io/badge/License-Unlicense-blue.svg)](https://unlicense.org)
+[![Build](https://github.com/kamiiroawase/zonepicker/actions/workflows/build.yml/badge.svg)](https://github.com/kamiiroawase/zonepicker/actions/workflows/build.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.kamiiroawase/zonepicker.svg)](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
-Android 时区选择器库：一个 Activity 完成时区选择。常用时区分组列表 + 全量搜索 +「跟随系统」选项，Material 风格，自动适配深色模式。
+Android 时区选择器库：**一个 Activity 完成时区选择**——常用时区分组列表、全量搜索与「跟随系统」选项，Material 风格，自动适配深色模式与 edge-to-edge。
+
+[English version](README.en.md)
 
 ## 使用
+
+发布于 [Maven Central](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)，版本跟随 `v*` git tag。Android 库（minSdk 26，无需 desugaring）；`mavenCentral()` 已是 Android Studio 新建工程的默认仓库，无需额外配置。
 
 ```kotlin
 dependencies {
     implementation("io.github.kamiiroawase:zonepicker:2.3.0")
 }
 ```
-
-`mavenCentral()` 已是 Android Studio 新建工程的默认仓库，无需额外配置。
 
 推荐用类型安全的 `ZonePickerContract` 启动，结果可区分「选中 / 跟随系统 / 取消」：
 
@@ -65,7 +68,7 @@ pickerLauncher.launch(
 - 自动适配深色模式与 edge-to-edge（状态栏 / 导航栏 / 键盘），不受宿主 targetSdk 影响
 - 深浅两套配色与 `zp_*` 字符串可用同名资源覆盖定制
 - TalkBack 可感知选中状态，返回箭头 RTL 自动镜像
-- minSdk 26，无需 desugaring；结果经 Activity Result 回传，不接管持久化
+- 结果经 Activity Result 回传，不接管持久化
 
 ## 已知限制
 
@@ -76,13 +79,14 @@ pickerLauncher.launch(
 ## 开发
 
 ```bash
+git clone https://github.com/kamiiroawase/zonepicker.git
+cd zonepicker
 ./gradlew build                            # 构建、测试、lint 与 Spotless 检查
 ./gradlew :zonepicker:testDebugUnitTest    # 数据逻辑单元测试
-./gradlew spotlessApply                    # 自动格式化
 ```
 
-演示工程为 `app` 模块：`./gradlew :app:installDebug`。版本号取自 HEAD 指向的 `v*` git tag，推送 tag 触发 Release workflow 发布到 Maven Central。
+45 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤、强调色与 Activity Result 契约。质量门禁全挂在 `build` 上：Spotless 格式与 Android Lint。演示工程为 `app` 模块（`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
 
 ## 许可
 
-[The Unlicense](LICENSE)——公共领域，随意使用。
+[The Unlicense](LICENSE) —— 公共领域，随意使用。
