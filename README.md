@@ -14,7 +14,7 @@ Android 时区选择器库：**一个 Activity 完成时区选择**——常用�
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:2.3.0")
+    implementation("io.github.kamiiroawase:zonepicker:2.3.1")
 }
 ```
 

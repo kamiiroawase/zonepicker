@@ -14,7 +14,7 @@ Published on [Maven Central](https://central.sonatype.com/artifact/io.github.kam
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:2.3.0")
+    implementation("io.github.kamiiroawase:zonepicker:2.3.1")
 }
 ```
 
