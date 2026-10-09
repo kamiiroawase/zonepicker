@@ -8,6 +8,7 @@ androidx-lifecycle = "2.11.0"
 androidx-recyclerview = "1.4.0"
 archCoreTesting = "2.2.0"
 coroutines = "1.11.0"
+dokka = "2.2.0"
 junit = "4.13.2"
 material = "1.14.0"
 spotless = "8.10.3"
@@ -30,5 +31,6 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }

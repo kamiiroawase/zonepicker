@@ -7,6 +7,7 @@ plugins {
     // shared build service twice and failing task creation on Gradle 9.
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.dokka) apply false
     alias(libs.plugins.maven.publish) apply false
 
     // Spotless applies at the root too: the per-module "*.gradle.kts" targets never reach

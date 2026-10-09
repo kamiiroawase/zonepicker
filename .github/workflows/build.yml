@@ -68,6 +68,18 @@ jobs:
           grep -q androidx.appcompat "$ARTIFACTS/zonepicker-$VERSION.pom"
           echo "Published artifacts verified: $VERSION"
 
+      # API reference from the library module's KDoc, so the carefully-written docs are
+      # browsable without a local Dokka run; uploaded as a workflow artifact (the demo
+      # app module stays out of the docs)
+      - name: Generate API documentation
+        run: ./gradlew :zonepicker:dokkaGeneratePublicationHtml
+
+      - name: Upload API documentation
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api-docs
+          path: zonepicker/build/dokka/html/**
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

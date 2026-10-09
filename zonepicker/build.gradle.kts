@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.spotless)
     alias(libs.plugins.maven.publish)
+
+    // API reference from the KDoc: ./gradlew :zonepicker:dokkaGeneratePublicationHtml
+    // (CI uploads the result as an artifact); configuration is Dokka's Android defaults
+    alias(libs.plugins.dokka)
 }
 
 group = "io.github.kamiiroawase"
