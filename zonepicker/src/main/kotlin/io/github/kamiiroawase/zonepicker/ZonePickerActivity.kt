@@ -6,6 +6,8 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -41,6 +43,19 @@ class ZonePickerActivity : AppCompatActivity() {
     /** Checkmark and cursor color: the accent itself while it contrasts with the surface. */
     private var markColor: Int = 0
 
+    /** Runs the list filter one typing-pause beat behind the keystrokes; see [onCreate]. */
+    private val renderHandler = Handler(Looper.getMainLooper())
+
+    /** True while [debouncedRender] sits in the handler queue; [onStart] flushes the beat
+     *  view-state restoration schedules, before its delay can flash the unfiltered list. */
+    private var renderPending = false
+
+    private val debouncedRender =
+        Runnable {
+            renderPending = false
+            render()
+        }
+
     private val viewModel by lazy { ViewModelProvider(this)[ZonePickerViewModel::class.java] }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +79,7 @@ class ZonePickerActivity : AppCompatActivity() {
             intent
                 .getIntExtra(ZonePicker.EXTRA_ACCENT_COLOR, ACCENT_UNSET)
                 .takeIf { it != ACCENT_UNSET }
+                ?.let(AccentColors::opaqueColor)
 
         runtimeAccent = passedAccent != null
 
@@ -117,10 +133,22 @@ class ZonePickerActivity : AppCompatActivity() {
             if (selectedZoneId == null) getString(R.string.zp_selected) else null,
         )
 
-        binding.searchEditText.doAfterTextChanged { render() }
+        binding.searchEditText.doAfterTextChanged { text ->
+            // The clear affordance tracks the text synchronously; the whole-list filter runs
+            // one debounce beat behind so a burst of keystrokes filters once, not per key.
+            // render() recomputes the visibility too — both paths stay consistent.
+            binding.searchClear.isVisible = !text?.toString()?.trim().isNullOrEmpty()
+            renderHandler.removeCallbacks(debouncedRender)
+            renderPending = true
+            renderHandler.postDelayed(debouncedRender, SEARCH_RENDER_DEBOUNCE_MILLIS)
+        }
 
         binding.searchEditText.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                // The search action is the query's final word — flush the pending beat now
+                renderHandler.removeCallbacks(debouncedRender)
+                renderPending = false
+                render()
                 hideKeyboard()
                 true
             } else {
@@ -143,11 +171,30 @@ class ZonePickerActivity : AppCompatActivity() {
         viewModel.snapshot.observe(this) { render() }
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        // View-state restoration runs between onCreate and onStart, re-firing the text
+        // watcher with the saved query; flush that beat before the first frame so a
+        // restored search never flashes the unfiltered default list through the delay
+        if (renderPending) {
+            renderHandler.removeCallbacks(debouncedRender)
+            renderPending = false
+            render()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
 
         // Triggers a background rebuild when the cached snapshot has crossed the DST window
         viewModel.requestFreshSnapshot()
+    }
+
+    override fun onDestroy() {
+        // A debounced render scheduled by the last keystroke must not fire past the activity
+        renderHandler.removeCallbacks(debouncedRender)
+        super.onDestroy()
     }
 
     private fun select(zoneId: String?) {
@@ -310,15 +357,18 @@ class ZonePickerActivity : AppCompatActivity() {
                 ),
         )
 
-    /** Chinese while the picker's own strings are the default Chinese ones; otherwise the
-     *  activity locale, which reflects both system and AppCompat per-app language. */
+    /** Chinese while the picker's own strings are the untranslated defaults; otherwise the
+     *  activity locale, which reflects both system and AppCompat per-app language. The
+     *  baseline resolves the title under Locale.ROOT — the default values/ bucket, which not
+     *  even a host overriding values-zh can shift — so only a real localization (values-<locale>
+     *  resources or a per-app locale) flips the decision. */
     private fun resolveNameLocale(): Locale {
         val appContext = applicationContext
 
-        val chinese =
-            Configuration(appContext.resources.configuration).apply { setLocale(Locale.SIMPLIFIED_CHINESE) }
+        val defaults =
+            Configuration(appContext.resources.configuration).apply { setLocale(Locale.ROOT) }
 
-        return if (appContext.createConfigurationContext(chinese).getString(R.string.zp_title) == getString(R.string.zp_title)) {
+        return if (appContext.createConfigurationContext(defaults).getString(R.string.zp_title) == getString(R.string.zp_title)) {
             Locale.SIMPLIFIED_CHINESE
         } else {
             resources.configuration.locales[0]
@@ -327,5 +377,9 @@ class ZonePickerActivity : AppCompatActivity() {
 
     private companion object {
         private const val ACCENT_UNSET = Int.MIN_VALUE
+
+        /** Typing pause the list filter waits out; the immediate query UI (the clear button)
+         *  never waits. */
+        private const val SEARCH_RENDER_DEBOUNCE_MILLIS = 120L
     }
 }

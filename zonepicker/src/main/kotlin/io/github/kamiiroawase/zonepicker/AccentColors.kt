@@ -21,6 +21,11 @@ internal object AccentColors {
         fallbackColor: Int,
     ): Int = if (contrast(accentColor, surfaceColor) >= MIN_MARK_CONTRAST) accentColor else fallbackColor
 
+    /** The color with its alpha channel forced on: the accent paints the header background
+     *  and the selection marks directly, where any translucency would bleed what sits
+     *  underneath through, and the black/white chrome pick assumes an opaque input. */
+    fun opaqueColor(color: Int): Int = color or OPAQUE_ALPHA
+
     /** WCAG sRGB relative luminance, the same quantity androidx ColorUtils computes. */
     private fun luminance(color: Int): Double {
         fun channel(value: Int): Double {
@@ -47,4 +52,7 @@ internal object AccentColors {
 
     /** WCAG's graphics threshold: the minimum contrast a mark needs to stay readable. */
     private const val MIN_MARK_CONTRAST = 3.0
+
+    /** Every accent enters the color math fully opaque, whatever alpha the caller passed. */
+    private const val OPAQUE_ALPHA = 0xFF000000.toInt()
 }

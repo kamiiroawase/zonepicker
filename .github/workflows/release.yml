@@ -38,15 +38,15 @@ jobs:
           # clone misses the tags
           fetch-depth: 0
 
-      # The README documents the released coordinates in the dependency snippet and keeps
-      # the changelog history in the same file; a forgotten bump ships stale versions to
-      # every reader until someone notices. Fail the release instead: the dependency
-      # snippet must reference the tag's version, the changelog must carry the tag's
-      # version section (moving 未发布 under it), and the dependency snippet must have
-      # dropped the previous tag's version — the changelog's historical sections keep old
-      # versions by design, so only the snippet is checked for staleness. The match is
-      # token-anchored — a plain fixed-string grep would hit substrings (1.2.1 inside
-      # 1.2.11)
+      # Same gate the Build workflow runs: this workflow executes gradlew too, and it
+      # publishes — a tampered wrapper must fail before anything reaches Central
+      - uses: gradle/actions/wrapper-validation@v6
+
+      # The README documents the released coordinates in the dependency snippet; a
+      # forgotten bump ships stale versions to every reader until someone notices. Fail
+      # the release instead: the snippet must reference the tag's version and must have
+      # dropped the previous tag's. The match is token-anchored — a plain fixed-string
+      # grep would hit substrings (1.2.1 inside 1.2.11)
       - name: Check README version coordinates match the tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -56,10 +56,6 @@ jobs:
           }
           coord_version "$VERSION" README.md || {
             echo "README.md dependency snippet does not reference version $VERSION"
-            exit 1
-          }
-          grep -q "^### v$VERSION（" README.md || {
-            echo "README.md changelog has no v$VERSION section — move 未发布 under it"
             exit 1
           }
           PREV_TAG="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"

@@ -37,4 +37,14 @@ class AccentColorsTest {
         // Even a white accent survives on the dark surface
         assertEquals(Color.WHITE, AccentColors.markColor(Color.WHITE, darkSurface, darkFallback))
     }
+
+    @Test
+    fun `opaqueColor forces any input alpha fully opaque`() {
+        // Translucent and transparent variants of the same accent land on the opaque color
+        assertEquals(0xFF3F51B5.toInt(), AccentColors.opaqueColor(0x803F51B5.toInt()))
+        assertEquals(0xFF3F51B5.toInt(), AccentColors.opaqueColor(0x003F51B5.toInt()))
+
+        // An already-opaque color passes through unchanged
+        assertEquals(0xFF3F51B5.toInt(), AccentColors.opaqueColor(0xFF3F51B5.toInt()))
+    }
 }

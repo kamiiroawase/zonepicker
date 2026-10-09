@@ -15,7 +15,8 @@ object ZonePicker {
     /**
      * @param selectedZoneId currently selected zone ID (e.g. Asia/Shanghai), checkmarked in the
      * list; null means "follow system"
-     * @param accentColor accent color (header background, checkmark); library default when omitted
+     * @param accentColor accent color (header background, checkmark); library default when
+     * omitted — any alpha in the value is forced opaque
      * @param title page title
      */
     fun createIntent(

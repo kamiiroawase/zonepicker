@@ -23,6 +23,19 @@ sealed interface ZonePickerResult {
     data object Canceled : ZonePickerResult
 }
 
+/** Result classification behind [ZonePickerContract.parseResult]: a non-OK result is a
+ *  cancellation no matter what data the platform attached, and only RESULT_OK distinguishes
+ *  follow-system (no zone ID) from selected. */
+internal fun parsePickerResult(
+    resultCode: Int,
+    zoneId: String?,
+): ZonePickerResult =
+    when {
+        resultCode != Activity.RESULT_OK -> ZonePickerResult.Canceled
+        zoneId == null -> ZonePickerResult.FollowSystem
+        else -> ZonePickerResult.Selected(zoneId)
+    }
+
 /** Type-safe contract for launching the picker via registerForActivityResult. */
 class ZonePickerContract : ActivityResultContract<ZonePickerRequest, ZonePickerResult>() {
     override fun createIntent(
@@ -33,9 +46,5 @@ class ZonePickerContract : ActivityResultContract<ZonePickerRequest, ZonePickerR
     override fun parseResult(
         resultCode: Int,
         data: Intent?,
-    ): ZonePickerResult =
-        when (val zoneId = data?.getStringExtra(ZonePicker.EXTRA_ZONE_ID)) {
-            null -> if (resultCode == Activity.RESULT_OK) ZonePickerResult.FollowSystem else ZonePickerResult.Canceled
-            else -> ZonePickerResult.Selected(zoneId)
-        }
+    ): ZonePickerResult = parsePickerResult(resultCode, data?.getStringExtra(ZonePicker.EXTRA_ZONE_ID))
 }

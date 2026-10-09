@@ -38,20 +38,3 @@ dependencies {
     implementation(project(":zonepicker"))
     implementation(libs.material)
 }
-
-spotless {
-    kotlin {
-        target("src/*/kotlin/**/*.kt")
-        ktlint()
-    }
-    kotlinGradle {
-        target("*.gradle.kts")
-        ktlint()
-    }
-    format("xml") {
-        target("src/**/*.xml")
-        trimTrailingWhitespace()
-        leadingTabsToSpaces(4)
-        endWithNewline()
-    }
-}

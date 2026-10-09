@@ -106,7 +106,8 @@ internal object ZoneData {
     /** tzdb `backward`-file aliases → their canonical zone IDs (IANA tzdb 2026e), plus the one
      *  link tzdb itself deleted (US/Pacific-New, gone since 2020a) — older devices' tzdata
      *  still carries it. Entries already covered by [HIDDEN_ZONE_IDS] or [LEGACY_ZONE_ID_REGEX]
-     *  are omitted; bare UTC/GMT stay visible. */
+     *  are omitted, except PRC and ROK: the three-letter regex hides them from the list anyway,
+     *  but [resolveDisplayZoneId] still needs their mappings. Bare UTC/GMT stay visible. */
     private val BACKWARD_ALIAS_TARGETS =
         mapOf(
             "Africa/Accra" to "Africa/Abidjan",
@@ -321,6 +322,8 @@ internal object ZoneData {
             "Pacific/Yap" to "Pacific/Port_Moresby",
             "Poland" to "Europe/Warsaw",
             "Portugal" to "Europe/Lisbon",
+            "PRC" to "Asia/Shanghai",
+            "ROK" to "Asia/Seoul",
             "Singapore" to "Asia/Singapore",
             "Turkey" to "Europe/Istanbul",
             "US/Alaska" to "America/Anchorage",
@@ -414,17 +417,8 @@ internal object ZoneData {
     }
 
     /** Search matching against display name, zone ID and offset label; case-insensitive and
-     *  separator-insensitive ("new york" matches America/New_York). */
-    fun matches(
-        zone: Zone,
-        query: String,
-    ): Boolean {
-        if (query.isEmpty()) return true
-
-        return matchesCore(zone, searchableText(query), offsetSearch(query))
-    }
-
-    /** Bulk matching for a whole list; the query is normalized once instead of once per zone. */
+     *  separator-insensitive ("new york" matches America/New_York). The query is normalized
+     *  once instead of once per zone. */
     fun filter(
         zones: List<Zone>,
         query: String,

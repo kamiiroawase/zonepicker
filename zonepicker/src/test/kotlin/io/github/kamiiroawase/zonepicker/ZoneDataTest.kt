@@ -38,8 +38,8 @@ class ZoneDataTest {
             val shanghai = ZoneData.Zone("Asia/Shanghai", "中国标准时间", 8 * 3600)
             val kolkata = ZoneData.Zone("Asia/Kolkata", "印度标准时间", 5 * 3600 + 1800)
 
-            assertTrue(ZoneData.matches(shanghai, "80"))
-            assertTrue(ZoneData.matches(kolkata, "gmt+5:3"))
+            assertTrue(matches(shanghai, "80"))
+            assertTrue(matches(kolkata, "gmt+5:3"))
         } finally {
             Locale.setDefault(originalLocale)
         }
@@ -118,20 +118,20 @@ class ZoneDataTest {
     fun `matches by id display name and offset label`() {
         val zone = ZoneData.Zone("Asia/Shanghai", "中国标准时间", 8 * 3600)
 
-        assertTrue(ZoneData.matches(zone, "shang"))
-        assertTrue(ZoneData.matches(zone, "标准"))
-        assertTrue(ZoneData.matches(zone, "gmt+08"))
-        assertFalse(ZoneData.matches(zone, "tokyo"))
+        assertTrue(matches(zone, "shang"))
+        assertTrue(matches(zone, "标准"))
+        assertTrue(matches(zone, "gmt+08"))
+        assertFalse(matches(zone, "tokyo"))
     }
 
     @Test
     fun `matches latin display name case-insensitively`() {
         val zone = ZoneData.Zone("Asia/Shanghai", "China Standard Time", 8 * 3600)
 
-        assertTrue(ZoneData.matches(zone, "china"))
-        assertTrue(ZoneData.matches(zone, "CHINA"))
-        assertTrue(ZoneData.matches(zone, "Standard"))
-        assertFalse(ZoneData.matches(zone, "tokyo"))
+        assertTrue(matches(zone, "china"))
+        assertTrue(matches(zone, "CHINA"))
+        assertTrue(matches(zone, "Standard"))
+        assertFalse(matches(zone, "tokyo"))
     }
 
     @Test
@@ -139,14 +139,14 @@ class ZoneDataTest {
         val shanghai = ZoneData.Zone("Asia/Shanghai", "中国标准时间", 8 * 3600)
         val kolkata = ZoneData.Zone("Asia/Kolkata", "印度标准时间", 5 * 3600 + 1800)
 
-        assertTrue(ZoneData.matches(shanghai, "gmt+8"))
-        assertTrue(ZoneData.matches(shanghai, "gmt+08"))
-        assertTrue(ZoneData.matches(shanghai, "gmt+8:00"))
-        assertTrue(ZoneData.matches(shanghai, "GMT +8"))
-        assertTrue(ZoneData.matches(kolkata, "gmt+5:30"))
-        assertTrue(ZoneData.matches(kolkata, "gmt+530"))
-        assertFalse(ZoneData.matches(shanghai, "gmt+9"))
-        assertFalse(ZoneData.matches(kolkata, "gmt+5:00"))
+        assertTrue(matches(shanghai, "gmt+8"))
+        assertTrue(matches(shanghai, "gmt+08"))
+        assertTrue(matches(shanghai, "gmt+8:00"))
+        assertTrue(matches(shanghai, "GMT +8"))
+        assertTrue(matches(kolkata, "gmt+5:30"))
+        assertTrue(matches(kolkata, "gmt+530"))
+        assertFalse(matches(shanghai, "gmt+9"))
+        assertFalse(matches(kolkata, "gmt+5:00"))
     }
 
     @Test
@@ -155,12 +155,12 @@ class ZoneDataTest {
         val auckland = ZoneData.Zone("Pacific/Auckland", "新西兰标准时间", 13 * 3600)
         val kiritimati = ZoneData.Zone("Pacific/Kiritimati", "莱恩群岛时间", 14 * 3600)
 
-        assertTrue(ZoneData.matches(paris, "gmt+1"))
-        assertFalse(ZoneData.matches(auckland, "gmt+1"))
-        assertFalse(ZoneData.matches(kiritimati, "gmt+1"))
-        assertTrue(ZoneData.matches(auckland, "gmt+13"))
-        assertTrue(ZoneData.matches(kiritimati, "gmt+14"))
-        assertFalse(ZoneData.matches(paris, "gmt+13"))
+        assertTrue(matches(paris, "gmt+1"))
+        assertFalse(matches(auckland, "gmt+1"))
+        assertFalse(matches(kiritimati, "gmt+1"))
+        assertTrue(matches(auckland, "gmt+13"))
+        assertTrue(matches(kiritimati, "gmt+14"))
+        assertFalse(matches(paris, "gmt+13"))
     }
 
     @Test
@@ -169,11 +169,11 @@ class ZoneDataTest {
         val honolulu = ZoneData.Zone("Pacific/Honolulu", "夏威夷标准时间", -10 * 3600)
         val midway = ZoneData.Zone("Pacific/Midway", "萨摩亚时间", -11 * 3600)
 
-        assertTrue(ZoneData.matches(azores, "gmt-1"))
-        assertFalse(ZoneData.matches(honolulu, "gmt-1"))
-        assertFalse(ZoneData.matches(midway, "gmt-1"))
-        assertTrue(ZoneData.matches(honolulu, "gmt-10"))
-        assertTrue(ZoneData.matches(midway, "gmt-11"))
+        assertTrue(matches(azores, "gmt-1"))
+        assertFalse(matches(honolulu, "gmt-1"))
+        assertFalse(matches(midway, "gmt-1"))
+        assertTrue(matches(honolulu, "gmt-10"))
+        assertTrue(matches(midway, "gmt-11"))
     }
 
     @Test
@@ -181,7 +181,7 @@ class ZoneDataTest {
         val kolkata = ZoneData.Zone("Asia/Kolkata", "印度标准时间", 5 * 3600 + 1800)
 
         // Typed mid-way to "5:30": not parseable, falls back to the old label substring match
-        assertTrue(ZoneData.matches(kolkata, "gmt+5:3"))
+        assertTrue(matches(kolkata, "gmt+5:3"))
     }
 
     @Test
@@ -190,14 +190,14 @@ class ZoneDataTest {
         val hoChiMinh = ZoneData.Zone("Asia/Ho_Chi_Minh", "印度支那时间", 7 * 3600)
         val portAuPrince = ZoneData.Zone("America/Port-au-Prince", "美国东部时间", -5 * 3600)
 
-        assertTrue(ZoneData.matches(newYork, "new york"))
-        assertTrue(ZoneData.matches(newYork, "New York"))
-        assertTrue(ZoneData.matches(newYork, "newyork"))
-        assertTrue(ZoneData.matches(newYork, "new_york"))
-        assertFalse(ZoneData.matches(newYork, "york new"))
+        assertTrue(matches(newYork, "new york"))
+        assertTrue(matches(newYork, "New York"))
+        assertTrue(matches(newYork, "newyork"))
+        assertTrue(matches(newYork, "new_york"))
+        assertFalse(matches(newYork, "york new"))
 
-        assertTrue(ZoneData.matches(hoChiMinh, "ho chi minh"))
-        assertTrue(ZoneData.matches(portAuPrince, "port au prince"))
+        assertTrue(matches(hoChiMinh, "ho chi minh"))
+        assertTrue(matches(portAuPrince, "port au prince"))
     }
 
     @Test
@@ -338,12 +338,19 @@ class ZoneDataTest {
                         "Singapore",
                         "Europe/Kyiv",
                         "Europe/Kiev",
+                        "Asia/Shanghai",
+                        "PRC",
+                        "Asia/Seoul",
+                        "ROK",
                     ),
             )
 
         val shown = zones.map { it.zoneId }.toSet()
 
-        assertEquals(setOf("Asia/Tokyo", "America/Los_Angeles", "Asia/Singapore", "Europe/Kyiv"), shown)
+        assertEquals(
+            setOf("Asia/Tokyo", "America/Los_Angeles", "Asia/Singapore", "Europe/Kyiv", "Asia/Shanghai", "Asia/Seoul"),
+            shown,
+        )
     }
 
     @Test
@@ -374,6 +381,8 @@ class ZoneDataTest {
             "Singapore" to "Asia/Singapore",
             "Turkey" to "Europe/Istanbul",
             "W-SU" to "Europe/Moscow",
+            "PRC" to "Asia/Shanghai",
+            "ROK" to "Asia/Seoul",
             "US/Pacific" to "America/Los_Angeles",
             "US/Eastern" to "America/New_York",
             "Canada/Pacific" to "America/Vancouver",
@@ -401,16 +410,16 @@ class ZoneDataTest {
         val etcGmtPlus8 = ZoneData.Zone("Etc/GMT+8", "GMT+08:00", -8 * 3600)
         val etcGmtMinus12 = ZoneData.Zone("Etc/GMT-12", "GMT-12:00", 12 * 3600)
 
-        assertFalse(ZoneData.matches(etcGmtPlus8, "gmt+8"))
-        assertTrue(ZoneData.matches(etcGmtPlus8, "gmt-8"))
-        assertFalse(ZoneData.matches(etcGmtMinus12, "gmt-12"))
-        assertTrue(ZoneData.matches(etcGmtMinus12, "gmt+12"))
+        assertFalse(matches(etcGmtPlus8, "gmt+8"))
+        assertTrue(matches(etcGmtPlus8, "gmt-8"))
+        assertFalse(matches(etcGmtMinus12, "gmt-12"))
+        assertTrue(matches(etcGmtMinus12, "gmt+12"))
 
         // Exact ID search keeps working — the query is not offset-shaped
-        assertTrue(ZoneData.matches(etcGmtPlus8, "etc/gmt+8"))
+        assertTrue(matches(etcGmtPlus8, "etc/gmt+8"))
 
         // Sign-less queries keep their text behavior: "gmt8" hits Etc/GMT-8's ID (UTC+8)
-        assertTrue(ZoneData.matches(ZoneData.Zone("Etc/GMT-8", "GMT-08:00", 8 * 3600), "gmt8"))
+        assertTrue(matches(ZoneData.Zone("Etc/GMT-8", "GMT-08:00", 8 * 3600), "gmt8"))
     }
 
     @Test
@@ -418,11 +427,11 @@ class ZoneDataTest {
         val shanghai = ZoneData.Zone("Asia/Shanghai", "中国标准时间", 8 * 3600)
         val utc = ZoneData.Zone("UTC", "协调世界时", 0)
 
-        assertTrue(ZoneData.matches(shanghai, "utc+8"))
-        assertFalse(ZoneData.matches(shanghai, "utc+9"))
+        assertTrue(matches(shanghai, "utc+8"))
+        assertFalse(matches(shanghai, "utc+9"))
 
         // Bare "utc" stays a text query and still finds the zone
-        assertTrue(ZoneData.matches(utc, "utc"))
+        assertTrue(matches(utc, "utc"))
     }
 
     @Test
@@ -431,10 +440,10 @@ class ZoneDataTest {
         val kolkata = ZoneData.Zone("Asia/Kolkata", "印度标准时间", 5 * 3600 + 1800)
 
         // "80" hits the label form of GMT+08:00, "530" that of GMT+05:30
-        assertTrue(ZoneData.matches(shanghai, "80"))
-        assertFalse(ZoneData.matches(shanghai, "90"))
-        assertTrue(ZoneData.matches(kolkata, "530"))
-        assertFalse(ZoneData.matches(kolkata, "500"))
+        assertTrue(matches(shanghai, "80"))
+        assertFalse(matches(shanghai, "90"))
+        assertTrue(matches(kolkata, "530"))
+        assertFalse(matches(kolkata, "500"))
     }
 
     @Test
@@ -462,6 +471,10 @@ class ZoneDataTest {
         // Known zones and unknown IDs pass through unchanged
         assertEquals("Asia/Tokyo", ZoneData.resolveDisplayZoneId("Asia/Tokyo"))
         assertEquals("Mars/Olympus", ZoneData.resolveDisplayZoneId("Mars/Olympus"))
+
+        // Three-letter backward aliases map too, even though the legacy regex hides them from the list
+        assertEquals("Asia/Shanghai", ZoneData.resolveDisplayZoneId("PRC"))
+        assertEquals("Asia/Seoul", ZoneData.resolveDisplayZoneId("ROK"))
     }
 
     @Test
@@ -489,6 +502,13 @@ class ZoneDataTest {
         assertTrue(default.any { it.zoneId == "Asia/Shanghai" })
         assertTrue(default.any { it.zoneId == "Asia/Macau" })
     }
+
+    /** The production entry point is bulk [ZoneData.filter]; single-zone assertions go through
+     *  the same path so the tests exercise what the picker actually runs. */
+    private fun matches(
+        zone: ZoneData.Zone,
+        query: String,
+    ): Boolean = ZoneData.filter(listOf(zone), query).isNotEmpty()
 
     private companion object {
         val ZONE_NAME_OVERRIDES =

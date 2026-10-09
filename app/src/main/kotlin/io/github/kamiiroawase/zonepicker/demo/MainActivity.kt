@@ -69,8 +69,10 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         private const val STATE_ZONE_ID = "zoneId"
 
-        /** The light accent the demo toggle passes — also exercises the runtime-accent
-         *  black header chrome the library picks for it. */
-        private const val CUSTOM_ACCENT_COLOR = 0xFF3F51B5.toInt()
+        /** The light accent the demo toggle passes — bright enough that the runtime accent
+         *  takes the black header chrome, yet below the 3:1 mark contrast on the light
+         *  surface, so the day-mode checkmark shows the text-color fallback too (night
+         *  mode keeps the amber mark). */
+        private const val CUSTOM_ACCENT_COLOR = 0xFFFFD54F.toInt()
     }
 }

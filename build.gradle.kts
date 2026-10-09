@@ -1,3 +1,5 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+
 plugins {
     // Declared here with apply false so every module resolves the plugins from the shared
     // root classloader: per-module aliases gave :zonepicker and :app distinct plugin
@@ -19,9 +21,27 @@ plugins {
 // keeps that true regardless of plugin application order.
 tasks.named("check") { dependsOn(tasks.named("spotlessCheck")) }
 
-spotless {
-    kotlinGradle {
-        target("*.gradle.kts")
-        ktlint()
+// One shared rule set for every project applying the plugin — this root plus :zonepicker and
+// :app, which still apply it themselves in their plugins blocks. The per-module blocks this
+// replaces were three near-identical copies that could drift apart; a target matching no
+// sources in a project (the root has no src/) is simply a no-op there.
+allprojects {
+    pluginManager.withPlugin("com.diffplug.spotless") {
+        configure<SpotlessExtension> {
+            kotlin {
+                target("src/*/kotlin/**/*.kt")
+                ktlint()
+            }
+            kotlinGradle {
+                target("*.gradle.kts")
+                ktlint()
+            }
+            format("xml") {
+                target("src/**/*.xml")
+                trimTrailingWhitespace()
+                leadingTabsToSpaces(4)
+                endWithNewline()
+            }
+        }
     }
 }
