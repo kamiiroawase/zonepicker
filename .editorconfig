@@ -2,5 +2,9 @@ root = true
 
 # Zone tables contain CJK keywords; ktlint measures such lines longer than
 # their character count, so allow extra width for Kotlin files.
+#
+# Compose composables are PascalCase by convention; exempt them from the
+# function-naming rule the rest of the code keeps enforcing.
 [*.{kt,kts}]
 max_line_length = 160
+ktlint_function_naming_ignore_when_annotated_with = Composable

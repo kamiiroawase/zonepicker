@@ -1,6 +1,5 @@
 package io.github.kamiiroawase.zonepicker
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -13,139 +12,127 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
-import org.junit.Rule
 import org.junit.Test
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ZonePickerViewModelTest {
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
+    @Test
+    fun `setZoneNames builds once and caches identical names`() = runTest {
+        withTestViewModel { viewModel ->
+            viewModel.setZoneNames(CHINESE_NAMES)
+
+            advanceUntilIdle()
+
+            val snapshot = viewModel.snapshot.value
+
+            assertNotNull(snapshot)
+            assertEquals("中国台北时间", snapshot!!.zones.first { it.zoneId == "Asia/Taipei" }.displayName)
+
+            // The same names again must not rebuild
+            viewModel.setZoneNames(CHINESE_NAMES)
+
+            advanceUntilIdle()
+
+            assertSame(snapshot, viewModel.snapshot.value)
+        }
+    }
 
     @Test
-    fun `setZoneNames builds once and caches identical names`() =
-        runTest {
-            withTestViewModel { viewModel ->
-                viewModel.setZoneNames(CHINESE_NAMES)
+    fun `changed names rebuild the snapshot in the new language`() = runTest {
+        withTestViewModel { viewModel ->
+            viewModel.setZoneNames(CHINESE_NAMES)
 
-                advanceUntilIdle()
+            advanceUntilIdle()
 
-                val snapshot = viewModel.snapshot.value
+            val first = viewModel.snapshot.value
 
-                assertNotNull(snapshot)
-                assertEquals("中国台北时间", snapshot!!.zones.first { it.zoneId == "Asia/Taipei" }.displayName)
+            assertNotNull(first)
 
-                // The same names again must not rebuild
-                viewModel.setZoneNames(CHINESE_NAMES)
+            viewModel.setZoneNames(ENGLISH_NAMES)
 
-                advanceUntilIdle()
+            advanceUntilIdle()
 
-                assertSame(snapshot, viewModel.snapshot.value)
-            }
+            val second = viewModel.snapshot.value
+
+            assertNotNull(second)
+            assertNotSame(first, second)
+            assertEquals("China Standard Time", second!!.zones.first { it.zoneId == "Asia/Shanghai" }.displayName)
         }
+    }
 
     @Test
-    fun `changed names rebuild the snapshot in the new language`() =
-        runTest {
-            withTestViewModel { viewModel ->
-                viewModel.setZoneNames(CHINESE_NAMES)
+    fun `a names change before the build lands replaces it`() = runTest {
+        withTestViewModel { viewModel ->
+            viewModel.setZoneNames(CHINESE_NAMES)
+            viewModel.setZoneNames(ENGLISH_NAMES)
 
-                advanceUntilIdle()
+            advanceUntilIdle()
 
-                val first = viewModel.snapshot.value
-
-                assertNotNull(first)
-
-                viewModel.setZoneNames(ENGLISH_NAMES)
-
-                advanceUntilIdle()
-
-                val second = viewModel.snapshot.value
-
-                assertNotNull(second)
-                assertNotSame(first, second)
-                assertEquals("China Standard Time", second!!.zones.first { it.zoneId == "Asia/Shanghai" }.displayName)
-            }
+            assertEquals(
+                "China Standard Time",
+                viewModel.snapshot.value!!
+                    .zones
+                    .first { it.zoneId == "Asia/Shanghai" }
+                    .displayName,
+            )
         }
+    }
 
     @Test
-    fun `a names change before the build lands replaces it`() =
-        runTest {
-            withTestViewModel { viewModel ->
-                viewModel.setZoneNames(CHINESE_NAMES)
-                viewModel.setZoneNames(ENGLISH_NAMES)
+    fun `requestFreshSnapshot builds a first snapshot without zone names`() = runTest {
+        withTestViewModel { viewModel ->
+            viewModel.requestFreshSnapshot()
 
-                advanceUntilIdle()
+            advanceUntilIdle()
 
-                assertEquals(
-                    "China Standard Time",
-                    viewModel.snapshot.value!!
-                        .zones
-                        .first { it.zoneId == "Asia/Shanghai" }
-                        .displayName,
-                )
-            }
+            // The default names: simplified Chinese, no overrides
+            assertEquals(
+                "中国标准时间",
+                viewModel.snapshot.value!!
+                    .zones
+                    .first { it.zoneId == "Asia/Shanghai" }
+                    .displayName,
+            )
         }
+    }
 
     @Test
-    fun `requestFreshSnapshot builds a first snapshot without zone names`() =
-        runTest {
-            withTestViewModel { viewModel ->
-                viewModel.requestFreshSnapshot()
+    fun `requestFreshSnapshot rebuilds past the staleness window`() = runTest {
+        val now = AtomicLong(1_000_000L)
 
-                advanceUntilIdle()
+        withTestViewModel(nowMillis = now::get) { viewModel ->
+            viewModel.setZoneNames(CHINESE_NAMES)
 
-                // The default names: simplified Chinese, no overrides
-                assertEquals(
-                    "中国标准时间",
-                    viewModel.snapshot.value!!
-                        .zones
-                        .first { it.zoneId == "Asia/Shanghai" }
-                        .displayName,
-                )
-            }
+            advanceUntilIdle()
+
+            val first = viewModel.snapshot.value
+
+            assertNotNull(first)
+
+            now.addAndGet(ZonePickerViewModel.STALE_AFTER_MILLIS + 1)
+
+            viewModel.requestFreshSnapshot()
+
+            advanceUntilIdle()
+
+            assertNotSame(first, viewModel.snapshot.value)
+
+            // The rebuilt snapshot is fresh again: no rebuild
+            val second = viewModel.snapshot.value
+
+            viewModel.requestFreshSnapshot()
+
+            advanceUntilIdle()
+
+            assertSame(second, viewModel.snapshot.value)
         }
-
-    @Test
-    fun `requestFreshSnapshot rebuilds past the staleness window`() =
-        runTest {
-            val now = AtomicLong(1_000_000L)
-
-            withTestViewModel(nowMillis = now::get) { viewModel ->
-                viewModel.setZoneNames(CHINESE_NAMES)
-
-                advanceUntilIdle()
-
-                val first = viewModel.snapshot.value
-
-                assertNotNull(first)
-
-                now.addAndGet(ZonePickerViewModel.STALE_AFTER_MILLIS + 1)
-
-                viewModel.requestFreshSnapshot()
-
-                advanceUntilIdle()
-
-                assertNotSame(first, viewModel.snapshot.value)
-
-                // The rebuilt snapshot is fresh again: no rebuild
-                val second = viewModel.snapshot.value
-
-                viewModel.requestFreshSnapshot()
-
-                advanceUntilIdle()
-
-                assertSame(second, viewModel.snapshot.value)
-            }
-        }
+    }
 
     /** Runs [block] with a ViewModel whose builds and the main dispatcher share this test's
      *  scheduler, so everything is sequential and advanceUntilIdle sees it all. */
-    private fun TestScope.withTestViewModel(
-        nowMillis: () -> Long = { 0L },
-        block: TestScope.(ZonePickerViewModel) -> Unit,
-    ) {
+    private fun TestScope.withTestViewModel(nowMillis: () -> Long = { 0L }, block: TestScope.(ZonePickerViewModel) -> Unit) {
         val dispatcher = StandardTestDispatcher(testScheduler)
 
         Dispatchers.setMain(dispatcher)

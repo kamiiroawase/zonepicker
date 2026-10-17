@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.maven.publish) apply false
 
     // Spotless applies at the root too: the per-module "*.gradle.kts" targets never reach
@@ -31,7 +32,17 @@ allprojects {
         configure<SpotlessExtension> {
             kotlin {
                 target("src/*/kotlin/**/*.kt")
-                ktlint()
+                // The override must repeat what spotless injects by default (intellij_idea
+                // code style) — providing any override disables that default injection —
+                // plus the Compose naming exemption: composables are PascalCase by
+                // convention, and the function-naming rule should skip them while still
+                // enforcing camel case everywhere else
+                ktlint().editorConfigOverride(
+                    mapOf(
+                        "ktlint_code_style" to "intellij_idea",
+                        "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
+                    ),
+                )
             }
             kotlinGradle {
                 target("*.gradle.kts")

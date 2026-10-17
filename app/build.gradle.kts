@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.spotless)
 }
 
@@ -25,7 +26,7 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
+        compose = true
     }
 
     compileOptions {
@@ -36,5 +37,9 @@ android {
 
 dependencies {
     implementation(project(":zonepicker"))
-    implementation(libs.material)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui)
 }

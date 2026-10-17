@@ -4,5 +4,9 @@
     <string name="demo_follow_system">跟随系统</string>
     <string name="demo_current">当前：%1$s</string>
     <string name="demo_custom_title_hint">自定义标题（可选）</string>
-    <string name="demo_custom_accent">自定义强调色（#FFD54F）</string>
+    <string name="demo_accent_label">自定义强调色</string>
+    <string name="demo_accent_default">默认</string>
+    <string name="demo_accent_amber">琥珀</string>
+    <string name="demo_accent_black">黑色</string>
+    <string name="demo_accent_white">白色</string>
 </resources>

@@ -1,8 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ZonePicker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- The window paints the background so the root layout doesn't have to (avoids overdraw). -->
+    <!-- Framework Material, not AppCompat: no androidx view library remains, and the theme
+         only supplies the window — background color and bar icon appearance. DayNight comes
+         from the values-night twin, not an AppCompat DayNight parent. -->
+    <style name="Theme.ZonePicker" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- The window paints the background so the Compose content doesn't have to (avoids overdraw). -->
         <item name="android:windowBackground">@color/zpBackground</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:textCursorDrawable">@drawable/zp_cursor</item>
     </style>
 </resources>

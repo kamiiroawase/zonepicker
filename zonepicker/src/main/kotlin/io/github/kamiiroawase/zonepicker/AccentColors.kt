@@ -15,11 +15,8 @@ internal object AccentColors {
     /** [accentColor] itself while it contrasts enough with [surfaceColor], [fallbackColor]
      *  otherwise. For selection marks on a surface (checkmark, cursor) — a white accent on a
      *  white surface stays visible through the fallback in either day or night mode. */
-    fun markColor(
-        accentColor: Int,
-        surfaceColor: Int,
-        fallbackColor: Int,
-    ): Int = if (contrast(accentColor, surfaceColor) >= MIN_MARK_CONTRAST) accentColor else fallbackColor
+    fun markColor(accentColor: Int, surfaceColor: Int, fallbackColor: Int): Int =
+        if (contrast(accentColor, surfaceColor) >= MIN_MARK_CONTRAST) accentColor else fallbackColor
 
     /** The color with its alpha channel forced on: the accent paints the header background
      *  and the selection marks directly, where any translucency would bleed what sits
@@ -40,10 +37,7 @@ internal object AccentColors {
     }
 
     /** WCAG contrast ratio: 1 for identical colors, up to 21 for black on white. */
-    private fun contrast(
-        first: Int,
-        second: Int,
-    ): Double {
+    private fun contrast(first: Int, second: Int): Double {
         val firstLuminance = luminance(first)
         val secondLuminance = luminance(second)
 

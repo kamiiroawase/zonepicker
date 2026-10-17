@@ -1,12 +1,13 @@
 package io.github.kamiiroawase.zonepicker
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -19,14 +20,14 @@ internal class ZonePickerViewModel(
     /** Clock behind the staleness window and the DST snapshot instant; injectable likewise. */
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
-    private val snapshotLiveData = MutableLiveData<Snapshot>()
+    private val snapshotMutable = MutableStateFlow<Snapshot?>(null)
 
     /** Null while the first background build is still running. */
-    val snapshot: LiveData<Snapshot> = snapshotLiveData
+    val snapshot: StateFlow<Snapshot?> = snapshotMutable.asStateFlow()
 
     /** Display-name inputs for the current UI language, resolved against the picker
-     *  activity's context — AppCompat per-app locales never reach the application context,
-     *  so only the activity can supply these. Main-thread confined, like every entry point. */
+     *  activity's context — per-app locales never reach the application context, so only
+     *  the activity can supply these. Main-thread confined, like every entry point. */
     private var zoneNames: ZoneNames? = null
 
     /** The in-flight build; a newer rebuild cancels and replaces it, and clearing the
@@ -48,7 +49,7 @@ internal class ZonePickerViewModel(
         // An in-flight build lands a fresh snapshot anyway; restarting would only duplicate work
         if (buildJob?.isActive == true) return
 
-        val current = snapshotLiveData.value
+        val current = snapshotMutable.value
 
         if (current == null || isStale(current)) rebuild()
     }
@@ -64,7 +65,7 @@ internal class ZonePickerViewModel(
             viewModelScope.launch {
                 val snapshot = withContext(buildDispatcher) { buildSnapshot(names) }
 
-                snapshotLiveData.value = snapshot
+                snapshotMutable.value = snapshot
             }
     }
 
@@ -84,16 +85,9 @@ internal class ZonePickerViewModel(
     }
 
     /** Zone display-name inputs: the generation locale plus host-overridable names. */
-    internal data class ZoneNames(
-        val nameLocale: Locale,
-        val overrides: Map<String, String>,
-    )
+    internal data class ZoneNames(val nameLocale: Locale, val overrides: Map<String, String>)
 
-    internal class Snapshot(
-        val zones: List<ZoneData.Zone>,
-        val defaultZones: List<ZoneData.Zone>,
-        val builtAtMillis: Long,
-    )
+    internal class Snapshot(val zones: List<ZoneData.Zone>, val defaultZones: List<ZoneData.Zone>, val builtAtMillis: Long)
 
     internal companion object {
         /** Offsets are DST snapshots; a short rebuild window bounds staleness at transitions. */

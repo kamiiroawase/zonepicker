@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark twin of Theme.ZonePicker: framework Material resolves the same name per uiMode,
+         replacing the AppCompat DayNight parent this project no longer depends on. -->
+    <style name="Theme.ZonePicker" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/zpBackground</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

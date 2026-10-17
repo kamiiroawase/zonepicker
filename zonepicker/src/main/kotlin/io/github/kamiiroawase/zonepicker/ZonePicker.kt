@@ -19,12 +19,7 @@ object ZonePicker {
      * omitted — any alpha in the value is forced opaque
      * @param title page title
      */
-    fun createIntent(
-        context: Context,
-        selectedZoneId: String? = null,
-        accentColor: Int? = null,
-        title: CharSequence? = null,
-    ): Intent =
+    fun createIntent(context: Context, selectedZoneId: String? = null, accentColor: Int? = null, title: CharSequence? = null): Intent =
         Intent(context, ZonePickerActivity::class.java).apply {
             selectedZoneId?.let { putExtra(EXTRA_ZONE_ID, it) }
             accentColor?.let { putExtra(EXTRA_ACCENT_COLOR, it) }

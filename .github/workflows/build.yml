@@ -64,8 +64,8 @@ jobs:
           test -f "$ARTIFACTS/zonepicker-$VERSION-sources.jar"
           test -f "$ARTIFACTS/zonepicker-$VERSION.pom"
           test -f "$ARTIFACTS/zonepicker-$VERSION.module"
-          grep -q com.google.android.material "$ARTIFACTS/zonepicker-$VERSION.pom"
-          grep -q androidx.appcompat "$ARTIFACTS/zonepicker-$VERSION.pom"
+          grep -q androidx.compose.material3 "$ARTIFACTS/zonepicker-$VERSION.pom"
+          grep -q androidx.activity "$ARTIFACTS/zonepicker-$VERSION.pom"
           echo "Published artifacts verified: $VERSION"
 
       # API reference from the library module's KDoc, so the carefully-written docs are

@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ZonePickerDemo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="colorPrimary">@color/demoAccent</item>
-    </style>
+    <!-- Framework parent only: the demo's visual theme is Compose's MaterialTheme, and
+         enableEdgeToEdge() owns the window's edge-to-edge state and bar icon appearance.
+         DayNight comes from the values-night twin. -->
+    <style name="Theme.ZonePickerDemo" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

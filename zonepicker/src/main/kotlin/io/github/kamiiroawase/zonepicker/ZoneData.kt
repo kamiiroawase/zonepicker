@@ -6,11 +6,7 @@ import kotlin.math.abs
 
 /** Picker data logic: free of Android context dependencies, unit-testable. */
 internal object ZoneData {
-    data class Zone(
-        val zoneId: String,
-        val displayName: String,
-        val offsetSeconds: Int,
-    ) {
+    data class Zone(val zoneId: String, val displayName: String, val offsetSeconds: Int) {
         /** Search keys normalized once at construction — [buildZones] creates each zone once
          *  off the main thread, so per-keystroke filtering stops re-normalizing every text. */
         val idKey: String = normalizeZoneText(zoneId)
@@ -56,8 +52,8 @@ internal object ZoneData {
                 Zone(
                     zoneId = id,
                     displayName =
-                        nameOverrides[id]
-                            ?: timeZone.getDisplayName(false, TimeZone.LONG, nameLocale),
+                    nameOverrides[id]
+                        ?: timeZone.getDisplayName(false, TimeZone.LONG, nameLocale),
                     offsetSeconds = timeZone.getOffset(nowMillis) / 1000,
                 )
             }.sortedWith(zoneOrder)
@@ -344,10 +340,7 @@ internal object ZoneData {
 
     /** Hides a backward alias only when its canonical ID exists on this device: newer tzdata shows
      *  one entry per zone, while older tzdata keeps the pre-rename ID (Europe/Kiev before 2022b). */
-    private fun isDuplicateAlias(
-        zoneId: String,
-        availableIds: Set<String>,
-    ): Boolean {
+    private fun isDuplicateAlias(zoneId: String, availableIds: Set<String>): Boolean {
         val canonicalId = BACKWARD_ALIAS_TARGETS[zoneId] ?: return false
 
         return canonicalId in availableIds
@@ -360,10 +353,7 @@ internal object ZoneData {
      *  heard of falls back to its pre-rename alias (Europe/Kyiv → Europe/Kiev). Everything
      *  else — known IDs, unknown IDs, IDs the list hides anyway (EST, the SystemV zones) —
      *  passes through unchanged; pass-through IDs simply match no row. */
-    fun resolveDisplayZoneId(
-        zoneId: String,
-        ids: Array<String> = TimeZone.getAvailableIDs(),
-    ): String {
+    fun resolveDisplayZoneId(zoneId: String, ids: Array<String> = TimeZone.getAvailableIDs()): String {
         val availableIds = ids.toHashSet()
 
         (BACKWARD_ALIAS_TARGETS[zoneId] ?: HIDDEN_ALIAS_TARGETS[zoneId])
@@ -419,11 +409,7 @@ internal object ZoneData {
     /** Search matching against display name, zone ID and offset label; case-insensitive and
      *  separator-insensitive ("new york" matches America/New_York). The query is normalized
      *  once instead of once per zone. */
-    fun filter(
-        zones: List<Zone>,
-        query: String,
-        extraZoneIds: Set<String> = emptySet(),
-    ): List<Zone> {
+    fun filter(zones: List<Zone>, query: String, extraZoneIds: Set<String> = emptySet()): List<Zone> {
         if (query.isEmpty()) return zones
 
         val textQuery = searchableText(query)
@@ -432,19 +418,14 @@ internal object ZoneData {
         return zones.filter { matchesCore(it, textQuery, offsetSearch) || it.zoneId in extraZoneIds }
     }
 
-    private fun matchesCore(
-        zone: Zone,
-        textQuery: String?,
-        offsetSearch: OffsetSearch,
-    ): Boolean =
-        (
-            textQuery != null &&
-                (
-                    zone.idKey.contains(textQuery) ||
-                        zone.nameKey.contains(textQuery)
+    private fun matchesCore(zone: Zone, textQuery: String?, offsetSearch: OffsetSearch): Boolean = (
+        textQuery != null &&
+            (
+                zone.idKey.contains(textQuery) ||
+                    zone.nameKey.contains(textQuery)
                 )
         ) ||
-            offsetSearch.matches(zone)
+        offsetSearch.matches(zone)
 
     /** One query's offset-search arm: a well-formed `gmt±H[:MM]` query compares sign, hour
      *  and minute exactly — `gmt+1` no longer hits GMT+10…+14 the way substring matching did —
@@ -457,9 +438,7 @@ internal object ZoneData {
     private sealed interface OffsetSearch {
         fun matches(zone: Zone): Boolean
 
-        data class Parsed(
-            val query: OffsetQuery,
-        ) : OffsetSearch {
+        data class Parsed(val query: OffsetQuery) : OffsetSearch {
             override fun matches(zone: Zone): Boolean {
                 val absSeconds = abs(zone.offsetSeconds)
 
@@ -469,19 +448,13 @@ internal object ZoneData {
             }
         }
 
-        data class Text(
-            val normalized: String,
-        ) : OffsetSearch {
+        data class Text(val normalized: String) : OffsetSearch {
             override fun matches(zone: Zone): Boolean = zone.offsetKey.contains(normalized)
         }
     }
 
     /** A parsed `gmt/utc ± H[:MM]` query: sign, whole hours, optional exact minutes. */
-    private data class OffsetQuery(
-        val negative: Boolean,
-        val hours: Int,
-        val minutes: Int?,
-    )
+    private data class OffsetQuery(val negative: Boolean, val hours: Int, val minutes: Int?)
 
     /** Parses the query lowercased with spaces dropped; zero padding is free ("05", "08:00")
      *  and the minutes may be glued to the hours ("530") or follow a colon ("5:30"). Null for
@@ -530,12 +503,11 @@ internal object ZoneData {
 
     /** Offset search form without spaces/colons and leading zeros, so "gmt+8" matches
      *  "GMT+08:00"; a leading utc prefix reads as gmt, the wording every label uses. */
-    private fun normalizeOffsetText(text: String): String =
-        text
-            .lowercase()
-            .replace(SEPARATOR_REGEX, "")
-            .replace(UTC_PREFIX_REGEX, "gmt")
-            .replace(DIGIT_RUN_REGEX) { digits -> digits.value.dropWhile { it == '0' }.ifEmpty { "0" } }
+    private fun normalizeOffsetText(text: String): String = text
+        .lowercase()
+        .replace(SEPARATOR_REGEX, "")
+        .replace(UTC_PREFIX_REGEX, "gmt")
+        .replace(DIGIT_RUN_REGEX) { digits -> digits.value.dropWhile { it == '0' }.ifEmpty { "0" } }
 
     private val SEPARATOR_REGEX = Regex("[\\s:]")
 
@@ -563,10 +535,7 @@ internal object ZoneData {
      * Tokens split on the same separator set the text search ignores, so "united-states"
      * and "hong-kong" spell like "united states" and "hong kong".
      */
-    private fun keywordMatches(
-        query: String,
-        keyword: String,
-    ): Boolean {
+    private fun keywordMatches(query: String, keyword: String): Boolean {
         val keywordLower = keyword.lowercase()
 
         return if (keywordLower.any { it in 'a'..'z' }) {
@@ -588,10 +557,7 @@ internal object ZoneData {
     /** Shortest Latin prefix that still matches a longer keyword token. */
     private const val MIN_KEYWORD_PREFIX = 3
 
-    private data class CountryZones(
-        val keywords: List<String>,
-        val zoneIds: List<String>,
-    )
+    private data class CountryZones(val keywords: List<String>, val zoneIds: List<String>)
 
     /** Fixed order of Chinese zones within the same offset group. */
     private val CN_ZONE_ORDER =

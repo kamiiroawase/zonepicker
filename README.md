@@ -4,17 +4,17 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kamiiroawase/zonepicker.svg)](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
-Android 时区选择器库：**一个 Activity 完成时区选择**——常用时区分组列表、全量搜索与「跟随系统」选项，Material 风格，自动适配深色模式与 edge-to-edge。
+Android 时区选择器库：**一个 Activity 完成时区选择**——常用时区分组列表、全量搜索与「跟随系统」选项，Jetpack Compose 构建，Material 风格，自动适配深色模式与 edge-to-edge。
 
 [English version](README.en.md)
 
 ## 使用
 
-发布于 [Maven Central](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)，版本跟随 `v*` git tag。Android 库（minSdk 26，无需 desugaring）；`mavenCentral()` 已是 Android Studio 新建工程的默认仓库，无需额外配置。
+发布于 [Maven Central](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)，版本跟随 `v*` git tag。Android 库（minSdk 26，无需 desugaring）；`mavenCentral()` 已是 Android Studio 新建工程的默认仓库，无需额外配置。界面由 Jetpack Compose 渲染，Compose 依赖经 Gradle 自动传递，宿主无论是否使用 Compose 均可直接接入。3.0 起界面全面迁移 Compose：公开 API 不变，不再依赖 AppCompat。
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:2.3.1")
+    implementation("io.github.kamiiroawase:zonepicker:3.0.0")
 }
 ```
 
@@ -33,7 +33,7 @@ private val pickerLauncher =
 pickerLauncher.launch(
     ZonePickerRequest(
         selectedZoneId = currentZoneId,              // 当前选中项打勾，null 视为跟随系统
-        accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C
+        accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C；作用于头部与底部色带、选中标记
         title = "选择时区",                           // 可选，默认「时区」
     )
 )
@@ -54,7 +54,7 @@ pickerLauncher.launch(
     ZonePicker.createIntent(
         context = this,
         selectedZoneId = currentZoneId,              // null 视为跟随系统
-        accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C
+        accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C；作用于头部与底部色带、选中标记
         title = "选择时区"                            // 可选，默认「时区」
     )
 )
@@ -62,10 +62,12 @@ pickerLauncher.launch(
 
 要点：
 
+- 界面由 Jetpack Compose 渲染，宿主无需任何 Compose 配置
 - 列表默认 27 个常用时区、覆盖全部 GMT 偏移，东八区开头；「跟随系统」置顶，选中项打勾
 - 全量即时搜索：时区显示名 / 时区 ID / GMT 偏移（`gmt+8`、`utc-5` 均可）/ 国家中英文名（搜「中国」可带出大陆、港澳台与新加坡时区）
 - 按 IANA `backward` 剔除全部旧别名（`US/Pacific`、`Japan` 等）；传入旧别名 ID 会自动映射到对应展示项
 - 自动适配深色模式与 edge-to-edge（状态栏 / 导航栏 / 键盘），不受宿主 targetSdk 影响
+- 强调色贯穿头部与底部导航栏区域，标题、图标与选中标记按对比度自动搭配黑白
 - 深浅两套配色与 `zp_*` 字符串可用同名资源覆盖定制
 - TalkBack 可感知选中状态，返回箭头 RTL 自动镜像
 - 结果经 Activity Result 回传，不接管持久化
@@ -75,6 +77,8 @@ pickerLauncher.launch(
 - 中文城市名（如「上海」）暂不可搜，请用英文城市名（如 `shanghai`）或国家名代替；国家表未收录的国家同理
 - 时区显示名默认简体中文。本地化需同时提供默认 `values/`（保持中文）与目标语言的 `values-<locale>/`，仅覆盖默认 `values/` 时时区名仍为中文
 - 解析后仍不在列表中的 `selectedZoneId`（如 `EST`、`SystemV/*` 或拼写错误）不显示选中标记
+- API 26-32 上选择器跟随系统语言，宿主的应用内语言不生效（系统级 per-app 语言自 API 33 起生效）
+- Android 15+ 上，个别系统的三键导航栏会绘制自己的背景，覆盖底部的强调色带
 
 ## 开发
 

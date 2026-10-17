@@ -293,22 +293,22 @@ class ZoneDataTest {
             ZoneData.buildZones(
                 0L,
                 ids =
-                    arrayOf(
-                        "Asia/Tokyo",
-                        "Europe/Kyiv",
-                        "EST",
-                        "CET",
-                        "ROC",
-                        "EST5EDT",
-                        "GMT0",
-                        "Greenwich",
-                        "Zulu",
-                        "Etc/UTC",
-                        "Etc/GMT+0",
-                        "UTC",
-                        "GMT",
-                        "Etc/GMT+12",
-                    ),
+                arrayOf(
+                    "Asia/Tokyo",
+                    "Europe/Kyiv",
+                    "EST",
+                    "CET",
+                    "ROC",
+                    "EST5EDT",
+                    "GMT0",
+                    "Greenwich",
+                    "Zulu",
+                    "Etc/UTC",
+                    "Etc/GMT+0",
+                    "UTC",
+                    "GMT",
+                    "Etc/GMT+12",
+                ),
             )
 
         val shown = zones.map { it.zoneId }.toSet()
@@ -327,22 +327,22 @@ class ZoneDataTest {
             ZoneData.buildZones(
                 0L,
                 ids =
-                    arrayOf(
-                        "Asia/Tokyo",
-                        "Japan",
-                        "America/Los_Angeles",
-                        "US/Pacific",
-                        "US/Pacific-New",
-                        "SystemV/YST9YDT",
-                        "Asia/Singapore",
-                        "Singapore",
-                        "Europe/Kyiv",
-                        "Europe/Kiev",
-                        "Asia/Shanghai",
-                        "PRC",
-                        "Asia/Seoul",
-                        "ROK",
-                    ),
+                arrayOf(
+                    "Asia/Tokyo",
+                    "Japan",
+                    "America/Los_Angeles",
+                    "US/Pacific",
+                    "US/Pacific-New",
+                    "SystemV/YST9YDT",
+                    "Asia/Singapore",
+                    "Singapore",
+                    "Europe/Kyiv",
+                    "Europe/Kiev",
+                    "Asia/Shanghai",
+                    "PRC",
+                    "Asia/Seoul",
+                    "ROK",
+                ),
             )
 
         val shown = zones.map { it.zoneId }.toSet()
@@ -505,10 +505,7 @@ class ZoneDataTest {
 
     /** The production entry point is bulk [ZoneData.filter]; single-zone assertions go through
      *  the same path so the tests exercise what the picker actually runs. */
-    private fun matches(
-        zone: ZoneData.Zone,
-        query: String,
-    ): Boolean = ZoneData.filter(listOf(zone), query).isNotEmpty()
+    private fun matches(zone: ZoneData.Zone, query: String): Boolean = ZoneData.filter(listOf(zone), query).isNotEmpty()
 
     private companion object {
         val ZONE_NAME_OVERRIDES =

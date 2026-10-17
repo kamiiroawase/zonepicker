@@ -3,6 +3,7 @@ import org.gradle.api.provider.ValueSourceParameters
 
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.spotless)
     alias(libs.plugins.maven.publish)
 
@@ -81,23 +82,23 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
+        compose = true
     }
 }
 
 dependencies {
     // api, not implementation: ZonePickerContract's signature exposes ActivityResultContract,
-    // which must reach consumers' compile classpath instead of relying on appcompat leaking it
+    // which must reach consumers' compile classpath
     api(libs.androidx.activity)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material.icons)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.livedata)
     implementation(libs.androidx.lifecycle.viewmodel)
-    implementation(libs.androidx.recyclerview)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.material)
-    testImplementation(libs.androidx.core.testing)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
