@@ -97,9 +97,7 @@ class ZonePickerActivity : ComponentActivity() {
                 ?.let { ZoneData.resolveDisplayZoneId(it) }
 
         val passedAccent =
-            intent
-                .getIntExtra(ZonePicker.EXTRA_ACCENT_COLOR, ACCENT_UNSET)
-                .takeIf { it != ACCENT_UNSET }
+            colorExtra(ZonePicker.EXTRA_ACCENT_COLOR, ZonePicker.EXTRA_ACCENT_COLOR_DARK)
                 ?.let(AccentColors::opaqueColor)
 
         accentColor = passedAccent ?: getColor(R.color.zpPrimaryColor)
@@ -116,9 +114,20 @@ class ZonePickerActivity : ComponentActivity() {
 
         // Selection marks drawn on zpSurface (checkmark, cursor) keep the accent while it
         // contrasts with that surface; a too-light accent falls back to the row's own text
-        // color, which reads in both day and night modes.
+        // color, which reads in both day and night modes. An explicit EXTRA_MARK_COLOR rides
+        // the same gate — a hand-picked mark cannot turn invisible either — and replaces only
+        // the mark, never the bands: a dark-mode bar subtle enough for the dark page keeps a
+        // bright checkmark
+        val passedMarkColor =
+            colorExtra(ZonePicker.EXTRA_MARK_COLOR, ZonePicker.EXTRA_MARK_COLOR_DARK)
+                ?.let(AccentColors::opaqueColor)
+
         markColor =
-            AccentColors.markColor(accentColor, getColor(R.color.zpSurface), getColor(R.color.zpTextPrimary))
+            AccentColors.markColor(
+                passedMarkColor ?: accentColor,
+                getColor(R.color.zpSurface),
+                getColor(R.color.zpTextPrimary),
+            )
 
         titleText = intent.getCharSequenceExtra(ZonePicker.EXTRA_TITLE)
 
@@ -219,7 +228,24 @@ class ZonePickerActivity : ComponentActivity() {
         finish()
     }
 
+    /** The mode's own color extra: the dark twin in night mode when present, the base value
+     *  otherwise. Read on every onCreate, so a system day/night switch while the picker is
+     *  open — the activity recreates, having declared no configChanges — re-resolves both
+     *  colors against the new mode instead of stranding the launch mode's picks on it. */
+    private fun colorExtra(base: String, dark: String): Int? {
+        val isNight =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+
+        val baseColor =
+            intent.getIntExtra(base, COLOR_UNSET).takeIf { it != COLOR_UNSET }
+        val darkColor =
+            intent.getIntExtra(dark, COLOR_UNSET).takeIf { it != COLOR_UNSET }
+
+        return if (isNight) darkColor ?: baseColor else baseColor
+    }
+
     private companion object {
-        private const val ACCENT_UNSET = Int.MIN_VALUE
+        private const val COLOR_UNSET = Int.MIN_VALUE
     }
 }

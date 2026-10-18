@@ -6,13 +6,17 @@ import android.content.Intent
 import androidx.activity.result.contract.ActivityResultContract
 import java.util.Locale
 
-/** Parameters for [ZonePickerContract]; a null selectedZoneId means "follow system". */
+/** Parameters for [ZonePickerContract]; a null selectedZoneId means "follow system".
+ *  Parameter meanings follow [ZonePicker.createIntent]. */
 data class ZonePickerRequest(
     val selectedZoneId: String? = null,
     val accentColor: Int? = null,
     val title: CharSequence? = null,
     val locale: Locale? = null,
     val defaultZoneIds: List<String>? = null,
+    val markColor: Int? = null,
+    val accentColorDark: Int? = null,
+    val markColorDark: Int? = null,
 )
 
 /** Picker outcome; distinguishes follow-system from cancellation, unlike the raw intent API. */
@@ -35,8 +39,17 @@ internal fun parsePickerResult(resultCode: Int, zoneId: String?): ZonePickerResu
 
 /** Type-safe contract for launching the picker via registerForActivityResult. */
 class ZonePickerContract : ActivityResultContract<ZonePickerRequest, ZonePickerResult>() {
-    override fun createIntent(context: Context, input: ZonePickerRequest): Intent =
-        ZonePicker.createIntent(context, input.selectedZoneId, input.accentColor, input.title, input.locale, input.defaultZoneIds)
+    override fun createIntent(context: Context, input: ZonePickerRequest): Intent = ZonePicker.createIntent(
+        context,
+        input.selectedZoneId,
+        input.accentColor,
+        input.title,
+        input.locale,
+        input.defaultZoneIds,
+        input.markColor,
+        input.accentColorDark,
+        input.markColorDark,
+    )
 
     override fun parseResult(resultCode: Int, data: Intent?): ZonePickerResult = parsePickerResult(resultCode, data?.getStringExtra(ZonePicker.EXTRA_ZONE_ID))
 }

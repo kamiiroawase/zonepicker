@@ -2,10 +2,13 @@ public final class io.github.kamiiroawase.zonepicker.ZonePicker {
   public static final io.github.kamiiroawase.zonepicker.ZonePicker INSTANCE;
   public static final java.lang.String EXTRA_ZONE_ID;
   public static final java.lang.String EXTRA_ACCENT_COLOR;
+  public static final java.lang.String EXTRA_ACCENT_COLOR_DARK;
+  public static final java.lang.String EXTRA_MARK_COLOR;
+  public static final java.lang.String EXTRA_MARK_COLOR_DARK;
   public static final java.lang.String EXTRA_TITLE;
   public static final java.lang.String EXTRA_LOCALE;
   public static final java.lang.String EXTRA_DEFAULT_ZONE_IDS;
-  public final android.content.Intent createIntent(android.content.Context, java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List<java.lang.String>);
+  public final android.content.Intent createIntent(android.content.Context, java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List<java.lang.String>, java.lang.Integer, java.lang.Integer, java.lang.Integer);
   public final java.lang.String getResultZoneId(android.content.Intent);
 }
 public final class io.github.kamiiroawase.zonepicker.ZonePickerActivity extends androidx.activity.ComponentActivity {
@@ -28,19 +31,25 @@ public final class io.github.kamiiroawase.zonepicker.ZonePickerDialogKt {
   public static final void ZonePickerDialog-fWhpE4E(kotlin.jvm.functions.Function1<? super io.github.kamiiroawase.zonepicker.ZonePickerResult, kotlin.Unit>, kotlin.jvm.functions.Function0<kotlin.Unit>, java.lang.String, long, java.lang.String, java.util.List<java.lang.String>, androidx.compose.runtime.Composer, int, int);
 }
 public final class io.github.kamiiroawase.zonepicker.ZonePickerRequest {
-  public io.github.kamiiroawase.zonepicker.ZonePickerRequest(java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List<java.lang.String>);
-  public io.github.kamiiroawase.zonepicker.ZonePickerRequest(java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List, int, kotlin.jvm.internal.DefaultConstructorMarker);
+  public io.github.kamiiroawase.zonepicker.ZonePickerRequest(java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List<java.lang.String>, java.lang.Integer, java.lang.Integer, java.lang.Integer);
+  public io.github.kamiiroawase.zonepicker.ZonePickerRequest(java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List, java.lang.Integer, java.lang.Integer, java.lang.Integer, int, kotlin.jvm.internal.DefaultConstructorMarker);
   public final java.lang.String getSelectedZoneId();
   public final java.lang.Integer getAccentColor();
   public final java.lang.CharSequence getTitle();
   public final java.util.Locale getLocale();
   public final java.util.List<java.lang.String> getDefaultZoneIds();
+  public final java.lang.Integer getMarkColor();
+  public final java.lang.Integer getAccentColorDark();
+  public final java.lang.Integer getMarkColorDark();
   public final java.lang.String component1();
   public final java.lang.Integer component2();
   public final java.lang.CharSequence component3();
   public final java.util.Locale component4();
   public final java.util.List<java.lang.String> component5();
-  public final io.github.kamiiroawase.zonepicker.ZonePickerRequest copy(java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List<java.lang.String>);
+  public final java.lang.Integer component6();
+  public final java.lang.Integer component7();
+  public final java.lang.Integer component8();
+  public final io.github.kamiiroawase.zonepicker.ZonePickerRequest copy(java.lang.String, java.lang.Integer, java.lang.CharSequence, java.util.Locale, java.util.List<java.lang.String>, java.lang.Integer, java.lang.Integer, java.lang.Integer);
   public java.lang.String toString();
   public int hashCode();
   public boolean equals(java.lang.Object);
