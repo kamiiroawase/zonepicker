@@ -1,16 +1,18 @@
 # Triggered on v* tag pushes: publishes the library artifacts to Maven Central (signed,
 # Central Portal, auto-released), republishes them to the local Maven repo for the GitHub
 # Release attachments (aar plus pom/module/sources files, creating the Release when it
-# does not exist), and fails loudly when the README's documented version coordinates were
-# not bumped with the tag. The full build gate (compile, tests, format and lint checks)
-# runs on the tag itself before anything is published — a tag may point at a commit that
-# never went through the Build workflow, and a Central publication cannot be undone.
+# does not exist), builds and signs the demo APK against the keystore secret and attaches
+# it under the tag name, and fails loudly when the README's documented version
+# coordinates were not bumped with the tag. The full build gate (compile, tests, format
+# and lint checks) runs on the tag itself before anything is published — a tag may point
+# at a commit that never went through the Build workflow, and a Central publication
+# cannot be undone.
 #
-# This workflow holds the Central publishing credentials and the GPG secret key, making
-# it a high-value supply-chain target: every action is pinned by commit SHA (a tag can
-# be re-pointed on the repo side; the trailing comment records the version), and
-# upgrades land only through Dependabot PRs that change the SHA, merged after a human
-# reviews the diff.
+# This workflow holds the Central publishing credentials, the GPG secret key and the
+# demo-APK signing key, making it a high-value supply-chain target: every action is
+# pinned by commit SHA (a tag can be re-pointed on the repo side; the trailing comment
+# records the version), and upgrades land only through Dependabot PRs that change the
+# SHA, merged after a human reviews the diff.
 #
 # Required repository secrets (Central Portal: https://central.sonatype.com):
 #   ORG_GRADLE_PROJECT_mavenCentralUsername / …Password — a Portal user token
@@ -18,6 +20,9 @@
 #     (gpg --export-secret-keys --armor …)
 #   ORG_GRADLE_PROJECT_signingInMemoryKeyId — the key id
 #   ORG_GRADLE_PROJECT_signingInMemoryKeyPassword — that key's passphrase
+# Demo-APK signing (the app module reads the same env contract):
+#   KEYSTORE_BASE64 — the keystore file, base64-encoded
+#   KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD — its credentials
 name: Release
 
 on:
@@ -72,16 +77,32 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralUsername }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralPassword }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKey }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           for secret in \
             ORG_GRADLE_PROJECT_mavenCentralUsername \
             ORG_GRADLE_PROJECT_mavenCentralPassword \
-            ORG_GRADLE_PROJECT_signingInMemoryKey; do
+            ORG_GRADLE_PROJECT_signingInMemoryKey \
+            KEYSTORE_BASE64 \
+            KEYSTORE_PASSWORD \
+            KEY_ALIAS \
+            KEY_PASSWORD; do
             test -n "${!secret}" || {
               echo "$secret is missing or empty — configure it in the repository's Actions secrets; publishing cannot proceed"
               exit 1
             }
           done
+
+      # Demo-APK signing key, decoded to disk once and handed to Gradle's signing config
+      # by path below — the secret never appears on any command line. Presence is already
+      # guaranteed by the gate above
+      - name: Prepare signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > signing.keystore
 
       # Same gate the Build workflow runs: this workflow executes gradlew too, and it
       # publishes — a tampered wrapper must fail before anything reaches Central
@@ -99,8 +120,14 @@ jobs:
 
       # Same gate the Build workflow runs on main: the tag may point at a commit that
       # never went through CI (pushed from a feature branch, say), and publishing to
-      # Central is irreversible — verify before anything is published
+      # Central is irreversible — verify before anything is published. The signing env
+      # rides along so :app:packageRelease signs the demo APK in this same run
       - name: Build and test
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/signing.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew build
 
       - name: Publish to local Maven
@@ -136,6 +163,8 @@ jobs:
           STAGE="release-assets"
           mkdir -p "$STAGE"
           find "$M2" -type f ! -name 'maven-metadata-local.xml' -exec cp {} "$STAGE/" \;
+          APK="$(ls app/build/outputs/apk/release/*.apk | head -n 1)"
+          cp "$APK" "$STAGE/zonepicker-demo-${GITHUB_REF_NAME}.apk"
           echo "Collected $(find "$STAGE" -type f | wc -l) files"
 
       - name: Upload to GitHub Release

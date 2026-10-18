@@ -8,3 +8,5 @@ build/
 captures/
 .externalNativeBuild/
 .cxx/
+# Decoded by the Release workflow from the KEYSTORE_BASE64 secret; never commit
+signing.keystore
