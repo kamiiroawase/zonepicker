@@ -33,7 +33,9 @@ private val pickerLauncher =
 pickerLauncher.launch(
     ZonePickerRequest(
         selectedZoneId = currentZoneId,              // 当前选中项打勾，null 视为跟随系统
-        accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C；作用于头部与底部色带、选中标记
+        accentColor = Color.parseColor("#3F51B5"),     // 可选，默认 #F05E1C；作用于头部与底部色带，打勾默认由它推导
+        accentColorDark = Color.parseColor("#3949AB"), // 可选；夜间模式下的色带替换值（null 则两模式同色）
+        markColorDark = Color.parseColor("#9FA8DA"),   // 可选；夜间模式下的打勾与光标，与色带独立取色（见下文）
         title = "选择时区",                           // 可选，默认「时区」
         locale = inAppLocale,                        // 可选；应用内语言，文字/时区名/RTL 均跟随
         defaultZoneIds = marketZones,                // 可选；自定义默认列表（如应用主要市场的时区）
@@ -44,6 +46,10 @@ pickerLauncher.launch(
 不传 `locale` 时选择器跟随系统语言（API 33+ 跟随系统级 per-app 语言）；应用内语言切换在 API 26-32 上没有系统通道可读，需像上面这样显式传入。Compose 入口（对话框 / 底部弹层）渲染在宿主界面内，天然跟随宿主语言，无需此参数。
 
 默认列表按设备当前时区环形排序（自己的偏移组开头）；传 `defaultZoneIds` 时改为宿主指定的常用时区（列表中的旧别名 ID 如 `US/Pacific`、`PRC` 会像选中项一样映射到对应展示项），未被覆盖的 GMT 偏移仍会自动补一个代表时区，保证全偏移可达。两个 Compose 入口的同名参数含义相同。
+
+`accentColor` 传一个颜色即可，两种模式各自适配：头部标题与返回箭头按该色亮度自动取黑/白，选中标记与搜索光标按当前模式的表面对比度判定，不足时回退行文字色。深浅取值不同的品牌色（如浅色模式用黑、深色模式要换一个能从深色页面里跳出来的颜色）另传 `accentColorDark`：选择器渲染在夜间模式时替换 `accentColor`——包括全屏打开期间系统切换深浅模式，Activity 重建后按新模式重新取值；null 时两种模式共用 `accentColor`。Compose 入口没有色带，`accentColor` 只作用于打勾与光标，由宿主按当前组合取值传入。
+
+打勾需要与色带独立取色时另传 `markColor`（配套 `markColorDark`）：显式值同样按当前模式的表面对比度把关（不足 3:1 回退行文字色，alpha 强制不透明），只换打勾与光标、不动色带——深色页面配低调色带加高亮打勾就是这个形状。Compose 入口无需此参数。
 
 不需要区分取消与跟随系统时，用基础写法即可：
 
@@ -60,7 +66,7 @@ pickerLauncher.launch(
     ZonePicker.createIntent(
         context = this,
         selectedZoneId = currentZoneId,              // null 视为跟随系统
-        accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C；作用于头部与底部色带、选中标记
+        accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C；作用于头部与底部色带，打勾默认由它推导
         title = "选择时区"                            // 可选，默认「时区」
     )
 )
@@ -102,7 +108,7 @@ if (showDialog) {
 - 全量即时搜索：时区显示名 / 时区 ID / GMT 偏移（`gmt+8`、`utc-5` 均可）/ 国家中英文名（搜「中国」可带出大陆、港澳台与新加坡时区）/ 常用城市中文名（上海、纽约、東京，简繁均可）
 - 按 IANA `backward` 剔除全部旧别名（`US/Pacific`、`Japan` 等）；传入旧别名 ID 会自动映射到对应展示项
 - 自动适配深色模式与 edge-to-edge（状态栏 / 导航栏 / 键盘），不受宿主 targetSdk 影响；平板与横屏下内容限宽居中
-- 强调色贯穿头部与底部导航栏区域，标题、图标与选中标记按对比度自动搭配黑白
+- 强调色贯穿头部与底部导航栏区域；标题与图标按强调色亮度取黑/白，选中标记与搜索光标在对比度不足时回退行文字色
 - 深浅两套配色与 `zp_*` 字符串可用同名资源覆盖定制
 - AAR 内置 baseline profile：AGP 8+ 的宿主构建自动合并，Profileinstaller 经 Compose 传递已在宿主类路径上，安装或首启即完成 AOT 编译，三个入口的首开速度都受益
 - TalkBack 可感知选中状态，返回箭头 RTL 自动镜像

@@ -33,7 +33,9 @@ private val pickerLauncher =
 pickerLauncher.launch(
     ZonePickerRequest(
         selectedZoneId = currentZoneId,              // checkmark on the current item; null means follow-system
-        accentColor = Color.parseColor("#3F51B5"),   // optional, default #F05E1C; paints the header band, bottom band and selection marks
+        accentColor = Color.parseColor("#3F51B5"),     // optional, default #F05E1C; paints the header and bottom bands, marks derive from it
+        accentColorDark = Color.parseColor("#3949AB"), // optional; replaces accentColor in night mode (null shares one color)
+        markColorDark = Color.parseColor("#9FA8DA"),   // optional; the night checkmark and cursor, colored apart from the bands (see below)
         title = "Choose time zone",                  // optional; the built-in default is used when omitted
         locale = inAppLocale,                        // optional; the in-app language — strings, zone names and RTL follow it
         defaultZoneIds = marketZones,                // optional; a custom default list (e.g. the app's key markets)
@@ -44,6 +46,10 @@ pickerLauncher.launch(
 Without `locale` the picker follows the system language (and the system per-app locale from API 33+); an in-app language switcher has no system channel to read on API 26-32, so pass it explicitly as above. The Compose entries (dialog / bottom sheet) render inside the host's UI and inherit its language on their own — no parameter needed.
 
 The default list orders itself circularly from the device's own time zone (its offset group leads); passing `defaultZoneIds` swaps in the host's curated zones (legacy alias IDs in the list, `US/Pacific` or `PRC`, map onto their display entries the way a passed-in selection does), with every GMT offset the list leaves uncovered still getting one representative zone. The two Compose entries take the same-named parameter.
+
+A single `accentColor` adapts to both modes: the header title and back arrow pick black/white from the color's own luminance, and the selection mark and search cursor fall back to the row text color whenever contrast against the current mode's surface runs short. Accents that differ per mode (black in light, say, while dark mode needs a color that lifts off the dark page) pass `accentColorDark`: it replaces `accentColor` whenever the picker renders in night mode — a system day/night switch while the full-screen picker is open included, since the recreated activity re-resolves against the new mode; null shares `accentColor` across both. The Compose entries paint no band — their `accentColor` colors only the mark and cursor, and the host passes the current composition's value.
+
+Pass `markColor` (with its `markColorDark` twin) when the checkmark needs a color of its own apart from the bands: the explicit value rides the same contrast gate (below 3:1 against the current mode's surface it falls back to the row text color; alpha forced opaque) and repaints only the mark and cursor, never the bands — a subtle bar on the dark page under a bright checkmark is exactly this shape. The Compose entries take no separate parameter.
 
 When cancel and follow-system need no distinguishing, the basic form suffices:
 
@@ -60,7 +66,7 @@ pickerLauncher.launch(
     ZonePicker.createIntent(
         context = this,
         selectedZoneId = currentZoneId,              // null means follow-system
-        accentColor = Color.parseColor("#3F51B5"),   // optional, default #F05E1C; paints the header band, bottom band and selection marks
+        accentColor = Color.parseColor("#3F51B5"),   // optional, default #F05E1C; paints the header and bottom bands, marks derive from it
         title = "Choose time zone"                   // optional; the built-in default is used when omitted
     )
 )
@@ -102,7 +108,7 @@ Highlights:
 - Full instant search over display names / zone IDs / GMT offsets (`gmt+8`, `utc-5` both work) / country names in Chinese and English (searching "中国" surfaces the mainland, Hong Kong, Macau, Taiwan and Singapore zones) / common Chinese city names (上海, 纽约, 東京 — simplified or traditional)
 - All legacy aliases pruned per the IANA `backward` list (`US/Pacific`, `Japan`, …); a legacy alias passed in maps automatically onto its display entry
 - Automatic dark-mode and edge-to-edge adaptation (status bar / navigation bar / keyboard), independent of the host's targetSdk; content caps its width and centers on tablets and landscape
-- The accent runs through the header band and the bottom navigation-bar area; titles, icons and selection marks pair black/white by contrast
+- The accent runs through the header band and the bottom navigation-bar area; titles and icons pair black/white by the accent's luminance, and the selection mark and search cursor fall back to the row text color when contrast runs short
 - The light/dark palettes and the `zp_*` strings are overridable via same-name resources
 - Ships a baseline profile inside the AAR — AGP 8+ merges it into the consuming build, Profileinstaller (already on the classpath through Compose) AOT-compiles it at install or first launch, and every entry's first open benefits
 - TalkBack announces the selected state; the back arrow mirrors automatically under RTL
