@@ -23,16 +23,19 @@ object ZonePicker {
      * list; null means "follow system"
      * @param accentColor accent color of the header band behind the status bar and the bottom
      * navigation-bar band; library default when omitted — any alpha in the value is forced
-     * opaque
+     * opaque. The derived checkmark and cursor track it (see [markColor])
      * @param accentColorDark replaces [accentColor] whenever the picker renders in night
      * mode — including a system day/night switch made while the picker is open: the activity
      * recreates and re-resolves against the new mode. Null keeps [accentColor] in both modes;
      * a single color needs no dark twin, the chrome picks black/white by luminance anyway
-     * @param markColor checkmark and search-cursor color; derived from the accent when null.
-     * The explicit value rides the same contrast gate as the derived one (below 3:1 against
-     * the current mode's surface it falls back to the row text color), so a hand-picked mark
-     * never turns invisible — any alpha is forced opaque. Decouples the two where a mode
-     * wants them apart: a bar subtle enough to sit on the dark page can keep a bright mark
+     * @param markColor checkmark and search-cursor color. Null (the default) derives it from
+     * the accent: the accent itself while it clears 3:1 against the current mode's surface,
+     * the row text color otherwise — amber or white in light mode renders the dark-gray
+     * fallback, black in dark mode the light-gray one, so a derived mark always stays
+     * readable. The explicit value is honored as handed in — alpha forced opaque, no
+     * contrast gate — so a host naming its mark gets exactly that mark (white on the light
+     * surface is the host's own call). Decouples the two where a mode wants them apart: a
+     * bar subtle enough to sit on the dark page can keep a bright mark
      * @param markColorDark replaces [markColor] in night mode, mirroring [accentColorDark]
      * @param title page title
      * @param locale explicit UI locale (BCP-47 tag serialized): strings, zone display names

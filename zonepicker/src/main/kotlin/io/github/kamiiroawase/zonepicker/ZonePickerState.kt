@@ -56,16 +56,26 @@ internal fun rememberZonePickerState(selectedZoneId: String?, accentColor: Color
             accentColor.copy(alpha = 1f)
         }
 
+    // These entries paint no bands — accentColor IS the mark color. An explicit one is
+    // honored as handed in (same contract as the activity's explicit markColor: alpha forced
+    // opaque, contrast gate skipped); only the resource-default accent derives its mark
+    // through the gate, falling back to the row text color below 3:1
+    val markColor =
+        if (accentColor != Color.Unspecified) {
+            accent
+        } else {
+            Color(
+                AccentColors.markColor(
+                    accent.toArgb(),
+                    colorResource(R.color.zpSurface).toArgb(),
+                    colorResource(R.color.zpTextPrimary).toArgb(),
+                ),
+            )
+        }
+
     return ZonePickerState(
         snapshot = viewModel.snapshot,
         selectedZoneId = remember(selectedZoneId) { selectedZoneId?.let(ZoneData::resolveDisplayZoneId) },
-        markColor =
-        Color(
-            AccentColors.markColor(
-                accent.toArgb(),
-                colorResource(R.color.zpSurface).toArgb(),
-                colorResource(R.color.zpTextPrimary).toArgb(),
-            ),
-        ),
+        markColor = markColor,
     )
 }
