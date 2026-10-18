@@ -1,6 +1,5 @@
 package io.github.kamiiroawase.zonepicker
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -27,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -98,19 +95,17 @@ internal fun ZonePickerScreen(
             }
         }
 
-        // The accent band mirrors the header at the bottom: as tall as the taller of the
-        // navigation bar and the keyboard (which covers it anyway — the weight(1f) content
-        // above reflows exactly as bottom-insets padding made it). The 16dp floor is
-        // portrait-only: devices with a hidden gesture hint report a zero bottom inset,
-        // and without a floor the footer would vanish and leave the card surface as the
-        // bottom color — but landscape drops a side-placed navigation bar's bottom inset
-        // to zero too, where a floor would draw a stray accent strip below the content
+        // The accent band mirrors the header over the bottom system-bar area: as tall as the
+        // taller of the navigation bar and the keyboard (which covers it anyway — the
+        // weight(1f) content above reflows exactly as bottom-insets padding made it). No
+        // minimum height: a zero bottom inset — no navigation bar at all, e.g. a hidden
+        // gesture hint — collapses the band entirely and the content column reaches the
+        // window's bottom edge, instead of a stray accent strip painting over nothing
         Box(
             modifier =
             Modifier
                 .fillMaxWidth()
                 .background(accent)
-                .heightIn(min = if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT) 16.dp else 0.dp)
                 .windowInsetsPadding(
                     WindowInsets.systemBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom),
                 ),
