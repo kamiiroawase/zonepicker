@@ -27,6 +27,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -38,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -94,20 +96,30 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DemoTheme {
-                DemoScreen(
-                    zoneId = zoneId,
-                    onPick = { title, accentColor, locale ->
-                        pickerLauncher.launch(
-                            ZonePickerRequest(
-                                selectedZoneId = zoneId,
-                                accentColor = accentColor,
-                                title = title,
-                                locale = locale,
-                            ),
-                        )
-                    },
-                    onZonePicked = { zoneId = it },
-                )
+                // Plain Texts take LocalContentColor, whose bare default is black — the
+                // three label lines read near-invisible on the dark window. Surface
+                // provides the scheme's onBackground for everything inside
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    DemoScreen(
+                        zoneId = zoneId,
+                        // The activity launch carries both modes' values: the picker itself
+                        // re-resolves the pair when a mid-open day/night switch recreates it
+                        onPick = { title, accent, locale ->
+                            pickerLauncher.launch(
+                                ZonePickerRequest(
+                                    selectedZoneId = zoneId,
+                                    accentColor = accent.light.bar,
+                                    accentColorDark = accent.dark.bar,
+                                    markColor = accent.light.mark,
+                                    markColorDark = accent.dark.mark,
+                                    title = title,
+                                    locale = locale,
+                                ),
+                            )
+                        },
+                        onZonePicked = { zoneId = it },
+                    )
+                }
             }
         }
     }
@@ -123,22 +135,47 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Accent options the demo passes to the picker; each exercises a different runtime path. */
-private enum class DemoAccent(@StringRes val label: Int, val color: Int?) {
-    /** The library default: no intent extra, the resource accent. */
-    Default(R.string.demo_accent_default, null),
+/** One mode's accent inputs the demo hands to the picker: [bar] feeds the activity entry's
+ *  header/status-bar band extra, [mark] its explicit checkmark extra; null keeps the
+ *  library's default or derived behavior for that input. */
+private data class AccentChoice(val bar: Int?, val mark: Int?)
+
+/** Accent options the demo passes to the picker: each carries a light/dark pair of
+ *  [AccentChoice]s, and the scheme on screen when the picker opens decides which one reaches
+ *  it — a color that reads in one mode can melt into the page of the other (black on the
+ *  dark background). */
+private enum class DemoAccent(@StringRes val label: Int, val light: AccentChoice, val dark: AccentChoice) {
+    /** The library default: no extras — the resource accent with the mark derived from it. */
+    Default(R.string.demo_accent_default, AccentChoice(null, null), AccentChoice(null, null)),
 
     /** Bright enough for the black header chrome, yet below the 3:1 mark contrast on the
      *  light surface, so the day-mode checkmark shows the text-color fallback too (night
-     *  mode keeps the amber mark). */
-    Amber(R.string.demo_accent_amber, 0xFFFFD54F.toInt()),
+     *  mode keeps the amber mark). The same inputs in both modes — the pair need not differ
+     *  just because it can. */
+    Amber(
+        R.string.demo_accent_amber,
+        AccentChoice(0xFFFFD54F.toInt(), null),
+        AccentChoice(0xFFFFD54F.toInt(), null),
+    ),
 
-    /** Flips the header chrome to white; the checkmark keeps the accent on the light
-     *  surface and falls back to the text color on the dark one. */
-    Black(R.string.demo_accent_black, Color.BLACK),
+    /** Flips the header chrome to white; the derived checkmark keeps the accent on the light
+     *  surface and falls back to the text color on the dark one. Night swaps the black —
+     *  which would sink into the dark page — for a deep indigo bar too dark to check with,
+     *  so an explicit brighter indigo mark rides along: the bar stays subtle, the mark stays
+     *  itself. */
+    Black(
+        R.string.demo_accent_black,
+        AccentChoice(Color.BLACK, null),
+        AccentChoice(0xFF3949AB.toInt(), 0xFF9FA8DA.toInt()),
+    ),
 
-    /** Keeps the black chrome and forces the mark fallback on the light surface. */
-    White(R.string.demo_accent_white, Color.WHITE),
+    /** Keeps the black chrome and forces the mark fallback on the light surface; white reads
+     *  against both page colors as-is. */
+    White(
+        R.string.demo_accent_white,
+        AccentChoice(Color.WHITE, null),
+        AccentChoice(Color.WHITE, null),
+    ),
 }
 
 /** Picker-language options the demo passes to the activity entry, exercising the explicit
@@ -156,14 +193,25 @@ private enum class DemoLocale(@StringRes val label: Int, val tag: String?) {
 @Composable
 private fun DemoTheme(content: @Composable () -> Unit) {
     val accent = colorResource(R.color.demoAccent)
+
+    // Button ink rides onPrimary, whose baseline defaults disagree across modes (white in
+    // light, near-black purple in dark): on the orange accent the dark-mode button text
+    // turns dark. Derive black/white from the accent's own luminance instead — the same
+    // rule the picker applies to its header chrome — so both modes read the same
+    val onAccent = if (accent.luminance() > 0.5f) ComposeColor.Black else ComposeColor.White
+
     val colorScheme =
-        if (isSystemInDarkTheme()) darkColorScheme(primary = accent) else lightColorScheme(primary = accent)
+        if (isSystemInDarkTheme()) {
+            darkColorScheme(primary = accent, onPrimary = onAccent)
+        } else {
+            lightColorScheme(primary = accent, onPrimary = onAccent)
+        }
 
     MaterialTheme(colorScheme = colorScheme, content = content)
 }
 
 @Composable
-private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: Int?, locale: Locale?) -> Unit, onZonePicked: (String?) -> Unit) {
+private fun DemoScreen(zoneId: String?, onPick: (title: String?, accent: DemoAccent, locale: Locale?) -> Unit, onZonePicked: (String?) -> Unit) {
     val displayName =
         remember(zoneId) {
             val timeZone = zoneId?.let { TimeZone.getTimeZone(it) } ?: TimeZone.getDefault()
@@ -182,8 +230,17 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
     var showDialog by rememberSaveable { mutableStateOf(false) }
     var showSheet by rememberSaveable { mutableStateOf(false) }
 
+    // The Compose entries take a single color per composition, so the mode on screen hands
+    // them its own; the activity launch above carries both modes' values instead
+    val darkTheme = isSystemInDarkTheme()
+    val choice = accent.choice(darkTheme)
+
     val pickerTitle = title.trim().takeIf { it.isNotEmpty() }
-    val pickerAccent = accent.composeColor()
+
+    // The Compose entries paint no bar — their accentColor is the mark color itself — so they
+    // take the explicit mark when this option defines one, the bar color otherwise: the same
+    // value the activity entry's derived mark starts from
+    val composeMark = choice.mark ?: choice.bar
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -273,7 +330,7 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
                         title
                             .trim()
                             .takeIf { it.isNotEmpty() },
-                        accent.color,
+                        accent,
                         locale.tag?.let(Locale::forLanguageTag),
                     )
                 },
@@ -314,7 +371,7 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
             },
             onDismissRequest = { showDialog = false },
             selectedZoneId = zoneId,
-            accentColor = pickerAccent,
+            accentColor = composeMark.composeColor(),
             title = pickerTitle,
         )
     }
@@ -327,11 +384,14 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
             },
             onDismissRequest = { showSheet = false },
             selectedZoneId = zoneId,
-            accentColor = pickerAccent,
+            accentColor = composeMark.composeColor(),
             title = pickerTitle,
         )
     }
 }
 
-/** The accent as the Compose entries take it: [ComposeColor.Unspecified] keeps the library default. */
-private fun DemoAccent.composeColor(): ComposeColor = color?.let(::ComposeColor) ?: ComposeColor.Unspecified
+/** One mode's accent inputs for this option. */
+private fun DemoAccent.choice(darkTheme: Boolean): AccentChoice = if (darkTheme) dark else light
+
+/** The color as the Compose entries take it: [ComposeColor.Unspecified] keeps the library default. */
+private fun Int?.composeColor(): ComposeColor = this?.let(::ComposeColor) ?: ComposeColor.Unspecified
