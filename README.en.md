@@ -43,7 +43,7 @@ pickerLauncher.launch(
 
 Without `locale` the picker follows the system language (and the system per-app locale from API 33+); an in-app language switcher has no system channel to read on API 26-32, so pass it explicitly as above. The Compose entries (dialog / bottom sheet) render inside the host's UI and inherit its language on their own — no parameter needed.
 
-The default list orders itself circularly from the device's own time zone (its offset group leads); passing `defaultZoneIds` swaps in the host's curated zones, with every GMT offset the list leaves uncovered still getting one representative zone. The two Compose entries take the same-named parameter.
+The default list orders itself circularly from the device's own time zone (its offset group leads); passing `defaultZoneIds` swaps in the host's curated zones (legacy alias IDs in the list, `US/Pacific` or `PRC`, map onto their display entries the way a passed-in selection does), with every GMT offset the list leaves uncovered still getting one representative zone. The two Compose entries take the same-named parameter.
 
 When cancel and follow-system need no distinguishing, the basic form suffices:
 
@@ -125,7 +125,7 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # the data-logic unit tests
 ```
 
-55 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting, Android Lint and the public-API golden check (see below). The API reference publishes to GitHub Pages from CI: <https://kamiiroawase.github.io/zonepicker/>. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
+57 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting, Android Lint and the public-API golden check (see below). The API reference publishes to GitHub Pages from CI: <https://kamiiroawase.github.io/zonepicker/>. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
 
 ### The public-API golden check
 

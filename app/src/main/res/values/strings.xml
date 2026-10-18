@@ -11,4 +11,8 @@
     <string name="demo_accent_amber">琥珀</string>
     <string name="demo_accent_black">黑色</string>
     <string name="demo_accent_white">白色</string>
+    <string name="demo_locale_label">选择器语言</string>
+    <string name="demo_locale_system">系统</string>
+    <string name="demo_locale_chinese">中文</string>
+    <string name="demo_locale_english">English</string>
 </resources>

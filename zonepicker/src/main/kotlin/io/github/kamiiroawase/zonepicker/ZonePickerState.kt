@@ -38,9 +38,9 @@ internal fun rememberZonePickerState(selectedZoneId: String?, accentColor: Color
     // on the context covers it without re-resolving resources every recomposition
     val zoneNames = remember(context) { PickerLocale.zoneNames(context) }
 
-    LaunchedEffect(zoneNames) { viewModel.setZoneNames(zoneNames) }
-
-    LaunchedEffect(defaultZoneIds) { viewModel.setDefaultZoneIds(defaultZoneIds) }
+    // One push per open carries both inputs, so the initial build runs once under both
+    // instead of being cancelled and restarted by a second push
+    LaunchedEffect(zoneNames, defaultZoneIds) { viewModel.setInputs(zoneNames, defaultZoneIds) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.requestFreshSnapshot()

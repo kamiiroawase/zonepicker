@@ -96,12 +96,13 @@ class MainActivity : ComponentActivity() {
             DemoTheme {
                 DemoScreen(
                     zoneId = zoneId,
-                    onPick = { title, accentColor ->
+                    onPick = { title, accentColor, locale ->
                         pickerLauncher.launch(
                             ZonePickerRequest(
                                 selectedZoneId = zoneId,
                                 accentColor = accentColor,
                                 title = title,
+                                locale = locale,
                             ),
                         )
                     },
@@ -140,6 +141,18 @@ private enum class DemoAccent(@StringRes val label: Int, val color: Int?) {
     White(R.string.demo_accent_white, Color.WHITE),
 }
 
+/** Picker-language options the demo passes to the activity entry, exercising the explicit
+ *  locale parameter — the in-app language-switcher channel on API 26-32, where no platform
+ *  per-app locale exists for the picker to pick up. */
+private enum class DemoLocale(@StringRes val label: Int, val tag: String?) {
+    /** The picker follows the system language (and the platform per-app locale on API 33+). */
+    System(R.string.demo_locale_system, null),
+
+    Chinese(R.string.demo_locale_chinese, "zh"),
+
+    English(R.string.demo_locale_english, "en"),
+}
+
 @Composable
 private fun DemoTheme(content: @Composable () -> Unit) {
     val accent = colorResource(R.color.demoAccent)
@@ -150,7 +163,7 @@ private fun DemoTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: Int?) -> Unit, onZonePicked: (String?) -> Unit) {
+private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: Int?, locale: Locale?) -> Unit, onZonePicked: (String?) -> Unit) {
     val displayName =
         remember(zoneId) {
             val timeZone = zoneId?.let { TimeZone.getTimeZone(it) } ?: TimeZone.getDefault()
@@ -162,6 +175,7 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
 
     var title by rememberSaveable { mutableStateOf("") }
     var accent by rememberSaveable { mutableStateOf(DemoAccent.Default) }
+    var locale by rememberSaveable { mutableStateOf(DemoLocale.System) }
 
     // The Compose entries: the same title and accent options as the activity launch above,
     // hosted in this window instead of a picker activity
@@ -231,6 +245,28 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
                 }
             }
 
+            // Demonstrates the locale parameter: the picker renders in the chosen language
+            // — chrome strings, zone names and RTL all follow. The Compose entries below
+            // render in this window instead and inherit its language, so they take none
+            Text(
+                text = stringResource(R.string.demo_locale_label),
+                modifier = Modifier.padding(top = 16.dp),
+                fontSize = 14.sp,
+            )
+
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DemoLocale.entries.forEach { option ->
+                    FilterChip(
+                        selected = locale == option,
+                        onClick = { locale = option },
+                        label = { Text(stringResource(option.label)) },
+                    )
+                }
+            }
+
             Button(
                 onClick = {
                     onPick(
@@ -238,6 +274,7 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
                             .trim()
                             .takeIf { it.isNotEmpty() },
                         accent.color,
+                        locale.tag?.let(Locale::forLanguageTag),
                     )
                 },
                 modifier = Modifier.padding(top = 32.dp),

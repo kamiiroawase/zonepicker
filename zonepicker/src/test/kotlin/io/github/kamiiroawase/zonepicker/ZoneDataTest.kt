@@ -52,6 +52,33 @@ class ZoneDataTest {
     }
 
     @Test
+    fun `defaultZones resolves host alias ids to the zones the list shows`() {
+        val zones = ZoneData.buildZones(0L)
+
+        // US/Pacific and PRC are backward aliases the list hides; they must land on their
+        // visible zones instead of dropping out, while the unknown ID still drops out
+        val custom =
+            ZoneData.defaultZones(
+                zones,
+                preferredZoneIds = setOf("US/Pacific", "PRC", "Asia/Tokyo", "Not/AZone"),
+            )
+
+        assertTrue(custom.any { it.zoneId == "America/Los_Angeles" })
+        assertTrue(custom.any { it.zoneId == "Asia/Shanghai" })
+        assertTrue(custom.any { it.zoneId == "Asia/Tokyo" })
+    }
+
+    @Test
+    fun `separator-only queries match nothing`() {
+        val zones = ZoneData.buildZones(0L)
+
+        // "-" used to answer every negative-offset zone, ":" every zone at all
+        assertTrue(ZoneData.filter(zones, "-").isEmpty())
+        assertTrue(ZoneData.filter(zones, "_").isEmpty())
+        assertTrue(ZoneData.filter(zones, ":").isEmpty())
+    }
+
+    @Test
     fun `offsetLabel formats sign and padding`() {
         assertEquals("GMT+08:00", ZoneData.offsetLabel(8 * 3600))
         assertEquals("GMT-05:30", ZoneData.offsetLabel(-(5 * 3600 + 1800)))

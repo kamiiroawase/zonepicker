@@ -38,22 +38,19 @@ internal class ZonePickerViewModel(
      *  ViewModel cancels it along with the scope. */
     private var buildJob: Job? = null
 
-    /** First call starts the initial build; a later call with a different value — an in-app
-     *  language switch surviving recreation — restarts the build with the new names. */
-    fun setZoneNames(names: ZoneNames) {
-        if (zoneNames == names) return
+    /** First call starts the initial build under both inputs; a later call with either
+     *  value changed — an in-app language switch or a curated-list swap surviving
+     *  recreation — rebuilds with both fresh, and an equal call does nothing. One call per
+     *  open, so the initial build runs once with both inputs instead of being cancelled and
+     *  restarted by a second push. */
+    fun setInputs(names: ZoneNames, defaultZoneIds: List<String>?) {
+        val namesChanged = zoneNames != names
+        val idsChanged = this.defaultZoneIds != defaultZoneIds
+
+        if (!namesChanged && !idsChanged) return
 
         zoneNames = names
-
-        rebuild()
-    }
-
-    /** Same contract as [setZoneNames]: the first call starts the initial build, a changed
-     *  value rebuilds, an equal one does not. */
-    fun setDefaultZoneIds(ids: List<String>?) {
-        if (defaultZoneIds == ids) return
-
-        defaultZoneIds = ids
+        this.defaultZoneIds = defaultZoneIds
 
         rebuild()
     }

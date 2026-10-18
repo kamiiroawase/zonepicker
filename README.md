@@ -43,7 +43,7 @@ pickerLauncher.launch(
 
 不传 `locale` 时选择器跟随系统语言（API 33+ 跟随系统级 per-app 语言）；应用内语言切换在 API 26-32 上没有系统通道可读，需像上面这样显式传入。Compose 入口（对话框 / 底部弹层）渲染在宿主界面内，天然跟随宿主语言，无需此参数。
 
-默认列表按设备当前时区环形排序（自己的偏移组开头）；传 `defaultZoneIds` 时改为宿主指定的常用时区，未被覆盖的 GMT 偏移仍会自动补一个代表时区，保证全偏移可达。两个 Compose 入口的同名参数含义相同。
+默认列表按设备当前时区环形排序（自己的偏移组开头）；传 `defaultZoneIds` 时改为宿主指定的常用时区（列表中的旧别名 ID 如 `US/Pacific`、`PRC` 会像选中项一样映射到对应展示项），未被覆盖的 GMT 偏移仍会自动补一个代表时区，保证全偏移可达。两个 Compose 入口的同名参数含义相同。
 
 不需要区分取消与跟随系统时，用基础写法即可：
 
@@ -125,7 +125,7 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # 数据逻辑单元测试
 ```
 
-55 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、锚定排序、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式、Android Lint 与公开 API 金标检查（见下文）。API 参考由 CI 自动发布到 GitHub Pages：<https://kamiiroawase.github.io/zonepicker/>。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
+57 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、锚定排序、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式、Android Lint 与公开 API 金标检查（见下文）。API 参考由 CI 自动发布到 GitHub Pages：<https://kamiiroawase.github.io/zonepicker/>。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
 
 ### 公开 API 金标检查
 

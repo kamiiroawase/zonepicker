@@ -398,10 +398,15 @@ internal object ZoneData {
 
     /** Default list: the preferred zones — the host's [preferredZoneIds], or the library's
      *  curated 27 when null — plus one representative for each offset they leave uncovered,
-     *  so every GMT offset stays reachable whatever the host passes. Unresolvable IDs in a
-     *  host list simply match no zone and drop out. */
+     *  so every GMT offset stays reachable whatever the host passes. Host IDs resolve the
+     *  same way the incoming selection does — an IANA backward alias (US/Pacific, PRC,
+     *  Etc/UTC) maps onto the row the list actually shows, instead of silently dropping out —
+     *  and unknown IDs simply match no zone. */
     fun defaultZones(zones: List<Zone>, preferredZoneIds: Set<String>? = null, anchorOffsetSeconds: Int = DEFAULT_ANCHOR_OFFSET_SECONDS): List<Zone> {
-        val preferred = zones.filter { it.zoneId in (preferredZoneIds ?: PREFERRED_ZONE_IDS) }
+        // The curated list is all canonical IDs already; only host lists may carry aliases
+        val preferredIds = preferredZoneIds?.map(::resolveDisplayZoneId)?.toSet() ?: PREFERRED_ZONE_IDS
+
+        val preferred = zones.filter { it.zoneId in preferredIds }
 
         val covered = preferred.map { it.offsetSeconds }.toSet()
 
@@ -459,7 +464,10 @@ internal object ZoneData {
         }
 
         data class Text(val normalized: String) : OffsetSearch {
-            override fun matches(zone: Zone): Boolean = zone.offsetKey.contains(normalized)
+            /** A normalized form carrying no letter or digit at all (empty, or lone
+             *  separators like "-" and ":") matches no label: substring-matching it would
+             *  answer "-" with every negative offset and ":" with everything. */
+            override fun matches(zone: Zone): Boolean = normalized.any { it.isLetterOrDigit() } && zone.offsetKey.contains(normalized)
         }
     }
 
@@ -495,9 +503,14 @@ internal object ZoneData {
      *  Classification runs on the offset form — it keeps the sign and drops spaces, so
      *  "GMT +8" counts as offset-shaped too — and demands a signed digit after the
      *  prefix, leaving sign-less queries ("gmt8" hits Etc/GMT-8's ID text) and bare
-     *  "gmt"/"utc" as text searches. */
+     *  "gmt"/"utc" as text searches. A query carrying no letter or digit at all (a lone
+     *  separator like "-", "_" or ":") is null as well: an empty text would
+     *  substring-match every zone, and ":" alone would hit the raw-offset display names
+     *  ("GMT+08:00") that keep their colon in this normalization. */
     private fun searchableText(query: String): String? {
         val textQuery = normalizeZoneText(query)
+
+        if (!textQuery.any { it.isLetterOrDigit() }) return null
 
         return if (OFFSET_QUERY_PREFIX.containsMatchIn(normalizeOffsetText(query))) null else textQuery
     }

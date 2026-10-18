@@ -8,10 +8,15 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
@@ -31,50 +36,50 @@ class ZonePickerActivity : ComponentActivity() {
 
     private var titleText: CharSequence? = null
 
+    /** An explicit locale from the intent — an in-app language switcher's choice, API 26-32
+     *  included, where no platform per-app locale exists for the picker to pick up; null
+     *  (the default) keeps the system locale (and the platform per-app locale from API 33). */
+    private var pickerLocale: Locale? = null
+
     /** Scrolls the checked zone to the top once, on its first appearance in the rendered
      *  list; initial launch only. */
     private var scrollSelectionInitially = false
 
     private val viewModel by lazy { ViewModelProvider(this)[ZonePickerViewModel::class.java] }
 
-    /** An explicit locale — an in-app language switcher's choice, API 26-32 included, where
-     *  no platform per-app locale exists for the picker to pick up — wraps the base context,
-     *  so every resource the picker resolves follows it: strings, zone display names, layout
-     *  direction. Without one the context keeps the system locale (and the platform per-app
-     *  locale from API 33). The intent is attached before this runs, so reading it here is
-     *  safe. */
-    override fun attachBaseContext(base: Context) {
-        val locale =
-            intent
-                ?.getStringExtra(ZonePicker.EXTRA_LOCALE)
-                ?.takeIf { it.isNotEmpty() }
-                ?.let(Locale::forLanguageTag)
+    /** The context the picker's own resources resolve against: this activity when no
+     *  explicit locale was passed, else a configuration-context wrap following it. The wrap
+     *  cannot happen in attachBaseContext — getIntent() still returns null there (the
+     *  framework assigns the activity's intent only after attachBaseContext runs) — so the
+     *  intent is read here in onCreate and the wrap enters through the composition. */
+    private fun pickerContext(): Context {
+        val locale = pickerLocale ?: return this
 
-        val wrapped =
-            if (locale == null) {
-                base
-            } else {
-                val configuration = Configuration(base.resources.configuration)
+        val configuration = Configuration(resources.configuration)
 
-                configuration.setLocale(locale)
+        configuration.setLocale(locale)
 
-                base.createConfigurationContext(configuration)
-            }
-
-        super.attachBaseContext(wrapped)
+        return createConfigurationContext(configuration)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Zone names must follow the picker's own UI language, resolved against this
-        // activity's context and re-pushed on every recreation, so an in-app language
-        // switch surviving recreation rebuilds the snapshot
-        viewModel.setZoneNames(PickerLocale.zoneNames(this))
+        pickerLocale =
+            intent
+                ?.getStringExtra(ZonePicker.EXTRA_LOCALE)
+                ?.takeIf { it.isNotEmpty() }
+                ?.let(Locale::forLanguageTag)
 
-        // A host-supplied default-list zone set, when it passes one; the first push starts
-        // the initial build under both inputs
-        viewModel.setDefaultZoneIds(intent.getStringArrayListExtra(ZonePicker.EXTRA_DEFAULT_ZONE_IDS)?.takeIf { it.isNotEmpty() })
+        // Zone names must follow the picker's own UI language, resolved against the
+        // locale-wrapped picker context and re-pushed on every recreation, so an in-app
+        // language switch surviving recreation rebuilds the snapshot. One push carries the
+        // host-supplied default-list zone set too, so the initial build starts once under
+        // both inputs
+        viewModel.setInputs(
+            PickerLocale.zoneNames(pickerContext()),
+            intent.getStringArrayListExtra(ZonePicker.EXTRA_DEFAULT_ZONE_IDS)?.takeIf { it.isNotEmpty() },
+        )
 
         // Stored legacy aliases (US/Pacific, Etc/UTC) and canonical IDs this old tzdata never
         // heard of resolve to the ID the list actually shows, so the checkmark lands on a
@@ -149,12 +154,27 @@ class ZonePickerActivity : ComponentActivity() {
         }
 
         setContent {
+            // The locale wrap enters here, not attachBaseContext (see pickerContext):
+            // every resource the picker resolves — stringResource, colorResource — follows
+            // LocalContext, while the window-level theme and chrome stay untouched. Keyed on
+            // the configuration (it implements equals) rather than the activity, whose
+            // resources mutate in place, so a live configuration change rebuilds the wrap
+            // with fresh day/night and density values
+            val pickerContext = remember(resources.configuration) { pickerContext() }
+
             // The picker mirrors in RTL locales on its own: resolving the layout direction from
             // the locale here works even when the host app has not enabled RTL support.
             CompositionLocalProvider(
-                LocalLayoutDirection provides PickerLocale.layoutDirection(resources.configuration.locales[0]),
+                LocalContext provides pickerContext,
+                LocalLayoutDirection provides PickerLocale.layoutDirection(pickerLocale ?: resources.configuration.locales[0]),
             ) {
-                MaterialTheme {
+                // A scheme that tracks dark mode: the picker paints from its own color
+                // resources, but the clickable ripple derives from the theme's colors, and
+                // the light default scheme would leave that ripple all but invisible on the
+                // dark night surfaces
+                MaterialTheme(
+                    colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
+                ) {
                     // Renders whenever a snapshot lands: the first build runs in the
                     // background, and a stale one crossing the DST window is rebuilt in onResume
                     val snapshot by viewModel.snapshot.collectAsState()

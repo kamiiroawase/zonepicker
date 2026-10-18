@@ -61,8 +61,9 @@ import kotlinx.coroutines.launch
  *   omitted — any alpha in the value is forced opaque
  * @param title panel title; the default `zp_title` string ("时区") when null
  * @param defaultZoneIds the default list's zones (e.g. an app's key markets); the library's
- *   curated 27-zone list when null. Unresolvable IDs drop out, and every GMT offset the
- *   list leaves uncovered still gets one representative zone
+ *   curated 27-zone list when null. Legacy alias IDs (US/Pacific, Etc/UTC) resolve to the
+ *   row the list actually shows; unresolvable IDs drop out, and every GMT offset the list
+ *   leaves uncovered still gets one representative zone
  */
 // ModalBottomSheet remains experimental in Material 3; the opt-in stays on this internal
 // use site — the public signature exposes nothing experimental
@@ -90,17 +91,22 @@ fun ZonePickerBottomSheet(
     val scope = rememberCoroutineScope()
 
     fun pick(zoneId: String?) {
-        scope.launch {
-            sheetState.hide()
+        val result =
+            if (zoneId == null) {
+                ZonePickerResult.FollowSystem
+            } else {
+                ZonePickerResult.Selected(zoneId)
+            }
 
-            onResult(
-                if (zoneId == null) {
-                    ZonePickerResult.FollowSystem
-                } else {
-                    ZonePickerResult.Selected(zoneId)
-                },
-            )
-        }
+        // invokeOnCompletion, not the coroutine tail: if the sheet leaves composition while
+        // the hide animation runs (the caller acted on a concurrent onDismissRequest), the
+        // scope's cancellation drops everything after the suspension — a plain onResult
+        // call included — while the completion handler still runs, so a tapped pick never
+        // silently disappears. It runs on the main thread either way: the animation settles
+        // there, and a rememberCoroutineScope is cancelled during composition disposal there.
+        scope
+            .launch { sheetState.hide() }
+            .invokeOnCompletion { onResult(result) }
     }
 
     // Mirrors on its own like the activity entry: hosts without RTL support still get a

@@ -20,9 +20,9 @@ import java.util.concurrent.atomic.AtomicLong
 @OptIn(ExperimentalCoroutinesApi::class)
 class ZonePickerViewModelTest {
     @Test
-    fun `setZoneNames builds once and caches identical names`() = runTest {
+    fun `setInputs builds once and caches identical inputs`() = runTest {
         withTestViewModel { viewModel ->
-            viewModel.setZoneNames(CHINESE_NAMES)
+            viewModel.setInputs(CHINESE_NAMES, null)
 
             advanceUntilIdle()
 
@@ -31,8 +31,8 @@ class ZonePickerViewModelTest {
             assertNotNull(snapshot)
             assertEquals("中国台北时间", snapshot!!.zones.first { it.zoneId == "Asia/Taipei" }.displayName)
 
-            // The same names again must not rebuild
-            viewModel.setZoneNames(CHINESE_NAMES)
+            // The same inputs again must not rebuild
+            viewModel.setInputs(CHINESE_NAMES, null)
 
             advanceUntilIdle()
 
@@ -43,7 +43,7 @@ class ZonePickerViewModelTest {
     @Test
     fun `changed names rebuild the snapshot in the new language`() = runTest {
         withTestViewModel { viewModel ->
-            viewModel.setZoneNames(CHINESE_NAMES)
+            viewModel.setInputs(CHINESE_NAMES, null)
 
             advanceUntilIdle()
 
@@ -51,7 +51,7 @@ class ZonePickerViewModelTest {
 
             assertNotNull(first)
 
-            viewModel.setZoneNames(ENGLISH_NAMES)
+            viewModel.setInputs(ENGLISH_NAMES, null)
 
             advanceUntilIdle()
 
@@ -66,8 +66,8 @@ class ZonePickerViewModelTest {
     @Test
     fun `a names change before the build lands replaces it`() = runTest {
         withTestViewModel { viewModel ->
-            viewModel.setZoneNames(CHINESE_NAMES)
-            viewModel.setZoneNames(ENGLISH_NAMES)
+            viewModel.setInputs(CHINESE_NAMES, null)
+            viewModel.setInputs(ENGLISH_NAMES, null)
 
             advanceUntilIdle()
 
@@ -82,9 +82,9 @@ class ZonePickerViewModelTest {
     }
 
     @Test
-    fun `changed default zone ids rebuild, equal ones do not`() = runTest {
+    fun `changed default zone ids rebuild, equal inputs do not`() = runTest {
         withTestViewModel { viewModel ->
-            viewModel.setZoneNames(CHINESE_NAMES)
+            viewModel.setInputs(CHINESE_NAMES, null)
 
             advanceUntilIdle()
 
@@ -92,7 +92,7 @@ class ZonePickerViewModelTest {
 
             assertNotNull(first)
 
-            viewModel.setDefaultZoneIds(listOf("Asia/Tokyo"))
+            viewModel.setInputs(CHINESE_NAMES, listOf("Asia/Tokyo"))
 
             advanceUntilIdle()
 
@@ -101,11 +101,30 @@ class ZonePickerViewModelTest {
 
             val second = viewModel.snapshot.value
 
-            viewModel.setDefaultZoneIds(listOf("Asia/Tokyo"))
+            viewModel.setInputs(CHINESE_NAMES, listOf("Asia/Tokyo"))
 
             advanceUntilIdle()
 
             assertSame(second, viewModel.snapshot.value)
+        }
+    }
+
+    @Test
+    fun `one inputs push builds once under both values`() = runTest {
+        // Each snapshot build samples the clock exactly once, so the counter is a build count
+        val builds = AtomicLong()
+
+        withTestViewModel(nowMillis = { builds.incrementAndGet() }) { viewModel ->
+            viewModel.setInputs(CHINESE_NAMES, listOf("Asia/Tokyo"))
+
+            advanceUntilIdle()
+
+            val snapshot = viewModel.snapshot.value
+
+            assertNotNull(snapshot)
+            assertEquals(1L, builds.get())
+            assertEquals("中国台北时间", snapshot!!.zones.first { it.zoneId == "Asia/Taipei" }.displayName)
+            assertTrue(snapshot.defaultZones.any { it.zoneId == "Asia/Tokyo" })
         }
     }
 
@@ -132,7 +151,7 @@ class ZonePickerViewModelTest {
         val now = AtomicLong(1_000_000L)
 
         withTestViewModel(nowMillis = now::get) { viewModel ->
-            viewModel.setZoneNames(CHINESE_NAMES)
+            viewModel.setInputs(CHINESE_NAMES, null)
 
             advanceUntilIdle()
 

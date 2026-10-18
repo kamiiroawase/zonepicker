@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -100,6 +101,9 @@ internal fun ColumnScope.ZonePickerBody(
     val textPrimary = colorResource(R.color.zpTextPrimary)
     val textSecondary = colorResource(R.color.zpTextSecondary)
 
+    // Announced by TalkBack over the loading spinner that stands in for the list
+    val loadingDescription = stringResource(R.string.zp_loading)
+
     var query by rememberSaveable { mutableStateOf("") }
 
     // The query the list renders with, one typing-pause beat behind the keystrokes
@@ -148,9 +152,11 @@ internal fun ColumnScope.ZonePickerBody(
 
     // Brings the checked zone to the top the first time the rendered list contains it. A
     // selection filtered out by the current query waits for the query to clear; an unknown
-    // zone ID gives up — it never shows a checkmark anyway.
+    // zone ID gives up — it never shows a checkmark anyway. Saveable, so a rotation or
+    // process death mid-session does not scroll back to the selection a second time: the
+    // [scrollSelectionInitially] seed applies on first composition only.
     val listState = rememberLazyListState()
-    var pendingSelectionScroll by remember { mutableStateOf(scrollSelectionInitially) }
+    var pendingSelectionScroll by rememberSaveable { mutableStateOf(scrollSelectionInitially) }
 
     LaunchedEffect(snapshot, rows, pendingSelectionScroll) {
         if (!pendingSelectionScroll || snapshot == null) return@LaunchedEffect
@@ -238,7 +244,10 @@ internal fun ColumnScope.ZonePickerBody(
             // stays rendered meanwhile
             if (snapshot == null) {
                 CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier =
+                    Modifier
+                        .align(Alignment.Center)
+                        .semantics { contentDescription = loadingDescription },
                     color = textSecondary,
                 )
             } else if (rows.isEmpty()) {

@@ -26,7 +26,8 @@ object ZonePicker {
      * no platform per-app locale exists for the picker activity to pick up; null (default)
      * follows the system locale (and the system per-app locale from API 33)
      * @param defaultZoneIds the default list's zones (e.g. an app's key markets); the
-     * library's curated 27-zone list when null. Unresolvable IDs drop out, and every GMT
+     * library's curated 27-zone list when null. Legacy alias IDs (US/Pacific, Etc/UTC)
+     * resolve to the row the list actually shows; unresolvable IDs drop out, and every GMT
      * offset the list leaves uncovered still gets one representative zone
      */
     fun createIntent(

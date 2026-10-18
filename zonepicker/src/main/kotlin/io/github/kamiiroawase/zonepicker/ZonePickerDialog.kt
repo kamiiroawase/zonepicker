@@ -56,8 +56,9 @@ import androidx.compose.ui.window.DialogProperties
  *   omitted — any alpha in the value is forced opaque
  * @param title panel title; the default `zp_title` string ("时区") when null
  * @param defaultZoneIds the default list's zones (e.g. an app's key markets); the library's
- *   curated 27-zone list when null. Unresolvable IDs drop out, and every GMT offset the
- *   list leaves uncovered still gets one representative zone
+ *   curated 27-zone list when null. Legacy alias IDs (US/Pacific, Etc/UTC) resolve to the
+ *   row the list actually shows; unresolvable IDs drop out, and every GMT offset the list
+ *   leaves uncovered still gets one representative zone
  */
 @Composable
 fun ZonePickerDialog(

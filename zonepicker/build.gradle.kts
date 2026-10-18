@@ -1,5 +1,6 @@
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
+import java.io.File
 import java.util.zip.ZipFile
 
 plugins {
@@ -118,26 +119,23 @@ val apiGoldenFile = layout.projectDirectory.file("api/zonepicker.api")
  *  the Gradle Kotlin DSL restricts bare ones.) */
 private val generatedMemberPattern = Regex("""[$]default\(|[$]update\(|[$]updateUiState\(|int [$]stable;|access[$]""")
 
-// The javap pipeline below lives inline inside the task actions: script-level helpers would
-// drag the script object into the configuration cache, which rejects it. Both actions
-// capture only local values resolved at configuration time.
-tasks.register("apiDump") {
-    group = "verification"
-    description = "Regenerates api/zonepicker.api from the release AAR."
-    dependsOn("assembleRelease")
+// The javap pipeline both API tasks share lives in this nested object, not in a plain
+// helper function: a function declared in a build script is a member of the script class,
+// so a task action calling it captures the script instance, which the configuration cache
+// rejects — while a nested object is a static reference the task action may hold freely.
+object ApiGuard {
+    /** The public binary surface of the release AAR as javap text, filtered of compiler
+     *  synthetics and restricted to the allowlisted public classes. */
+    fun surface(
+        aarFile: File,
+        classes: Set<String>,
+        noise: Regex,
+        workDir: File,
+    ): String {
+        val classesJar = workDir.resolve("classes.jar")
 
-    val aarFile = releaseAar
-    val goldenFile = apiGoldenFile
-    val classes = publicApiClasses
-    val noise = generatedMemberPattern
-    inputs.file(aarFile)
-    outputs.file(goldenFile)
-
-    doLast {
-        val classesJar = temporaryDir.resolve("classes.jar")
-
-        temporaryDir.mkdirs()
-        ZipFile(aarFile.get().asFile).use { zip ->
+        workDir.mkdirs()
+        ZipFile(aarFile).use { zip ->
             zip.getInputStream(zip.getEntry("classes.jar")).use { input -> classesJar.outputStream().use { input.copyTo(it) } }
         }
 
@@ -199,7 +197,24 @@ tasks.register("apiDump") {
             }
         }
 
-        goldenFile.asFile.writeText(surface.toString())
+        return surface.toString()
+    }
+}
+
+tasks.register("apiDump") {
+    group = "verification"
+    description = "Regenerates api/zonepicker.api from the release AAR."
+    dependsOn("assembleRelease")
+
+    val aarFile = releaseAar
+    val goldenFile = apiGoldenFile
+    val classes = publicApiClasses
+    val noise = generatedMemberPattern
+    inputs.file(aarFile)
+    outputs.file(goldenFile)
+
+    doLast {
+        goldenFile.asFile.writeText(ApiGuard.surface(aarFile.get().asFile, classes, noise, temporaryDir))
     }
 }
 
@@ -216,74 +231,10 @@ tasks.register("apiCheck") {
     inputs.file(goldenFile)
 
     doLast {
-        val classesJar = temporaryDir.resolve("classes.jar")
-
-        temporaryDir.mkdirs()
-        ZipFile(aarFile.get().asFile).use { zip ->
-            zip.getInputStream(zip.getEntry("classes.jar")).use { input -> classesJar.outputStream().use { input.copyTo(it) } }
-        }
-
-        fun isPublicApi(className: String): Boolean =
-            classes.any { listed ->
-                val isSelf = className == listed || className == listed + "Kt"
-                val nested = className.removePrefix(listed + '$')
-
-                isSelf || (nested != className && nested.split('$').all { it.isNotEmpty() && it.first().isUpperCase() })
-            }
-
-        val classNames =
-            ZipFile(classesJar).use { jar ->
-                jar
-                    .entries()
-                    .asSequence()
-                    .filter { it.name.endsWith(".class") }
-                    .map { it.name.removeSuffix(".class").replace('/', '.') }
-                    .filter(::isPublicApi)
-                    .sorted()
-                    .toList()
-            }
-
-        val javap =
-            ProcessBuilder(
-                listOf("javap", "-public", "-classpath", classesJar.absolutePath) + classNames,
-            ).redirectErrorStream(true).start()
-
-        val output = javap.inputStream.bufferedReader().use { it.readText() }
-
-        check(javap.waitFor() == 0) { "javap failed:\n$output" }
-
-        val surface = StringBuilder()
-        var keepingClass = false
-
-        for (rawLine in output.lineSequence()) {
-            val line = rawLine.trimEnd()
-
-            when {
-                line.isEmpty() || line.startsWith("Compiled from") -> {
-                    Unit
-                }
-
-                line.endsWith("{") -> {
-                    keepingClass = line.startsWith("public ")
-
-                    if (keepingClass) surface.appendLine(line)
-                }
-
-                line == "}" -> {
-                    if (keepingClass) surface.appendLine(line)
-
-                    keepingClass = false
-                }
-
-                keepingClass && !noise.containsMatchIn(line) -> {
-                    surface.appendLine(line)
-                }
-            }
-        }
-
+        val surface = ApiGuard.surface(aarFile.get().asFile, classes, noise, temporaryDir)
         val expected = goldenFile.asFile.readText()
 
-        check(surface.toString() == expected) {
+        check(surface == expected) {
             "The public API drifted from ${goldenFile.asFile.name}; run ./gradlew :zonepicker:apiDump, review the diff and commit it (or change the code)"
         }
     }
