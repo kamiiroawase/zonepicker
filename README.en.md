@@ -4,7 +4,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kamiiroawase/zonepicker.svg)](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
-An Android time zone picker library: **one Activity completes the pick** — a curated grouped list of common zones, full search and a "follow system" option, built with Jetpack Compose, Material styling, automatic dark-mode and edge-to-edge adaptation.
+An Android time zone picker library: **one Activity completes the pick** — a curated grouped list of common zones, full search and a "follow system" option, built with Jetpack Compose, Material styling, automatic dark-mode and edge-to-edge adaptation. Compose hosts can alternatively embed the same picker with **`ZonePickerDialog` / `ZonePickerBottomSheet`** — a dialog or bottom sheet straight inside their own UI.
 
 [中文版](README.md)
 
@@ -60,9 +60,37 @@ pickerLauncher.launch(
 )
 ```
 
+### Compose entries: dialog and bottom sheet
+
+Hosts already using Compose can skip the Activity launch and drop the same picker straight into their own composition (as of 3.1). The list, search and follow-system option are identical to the full-screen entry; results reuse `ZonePickerResult` and only ever deliver selected / follow-system — cancellation never arrives through `onResult`, it is expressed by `onDismissRequest` alone. The caller owns visibility; close in both callbacks:
+
+```kotlin
+var showDialog by rememberSaveable { mutableStateOf(false) }
+
+if (showDialog) {
+    ZonePickerDialog(
+        onResult = { result ->
+            when (result) {
+                is ZonePickerResult.Selected -> currentZoneId = result.zoneId
+                ZonePickerResult.FollowSystem -> currentZoneId = null
+                ZonePickerResult.Canceled -> Unit   // never delivered by the dialog entry
+            }
+            showDialog = false
+        },
+        onDismissRequest = { showDialog = false },
+        selectedZoneId = currentZoneId,            // null means follow-system
+        accentColor = Color(0xFF3F51B5),           // optional, default #F05E1C; selection mark and search cursor
+        title = "Choose time zone",                // optional; the built-in default is used when omitted
+    )
+}
+```
+
+`ZonePickerBottomSheet(...)` takes the same parameters and renders as a Material bottom sheet; a tap first plays the sheet's hide animation and only then fires `onResult`.
+
 Highlights:
 
 - The UI renders with Jetpack Compose; hosts need no Compose setup of their own
+- Beyond the full-screen Activity, `ZonePickerDialog` / `ZonePickerBottomSheet` compose entries embed the picker into any Compose hierarchy — no Activity result wiring
 - The list ships 27 curated zones covering every GMT offset, UTC+8 first; "follow system" pinned to the top, the selected item checkmarked
 - Full instant search over display names / zone IDs / GMT offsets (`gmt+8`, `utc-5` both work) / country names in Chinese and English (searching "中国" surfaces the mainland, Hong Kong, Macau, Taiwan and Singapore zones)
 - All legacy aliases pruned per the IANA `backward` list (`US/Pacific`, `Japan`, …); a legacy alias passed in maps automatically onto its display entry
@@ -89,7 +117,7 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # the data-logic unit tests
 ```
 
-45 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering, accent colors and the Activity Result contract. Quality gates hang off `build`: Spotless formatting and Android Lint. The demo lives in the `app` module (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
+47 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting and Android Lint. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
 
 ## License
 

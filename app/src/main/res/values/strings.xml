@@ -1,6 +1,8 @@
 <resources>
     <string name="demo_app_name">ZonePicker Demo</string>
-    <string name="demo_pick">选择时区</string>
+    <string name="demo_pick">选择时区（全屏）</string>
+    <string name="demo_pick_dialog">对话框</string>
+    <string name="demo_pick_sheet">底部弹层</string>
     <string name="demo_follow_system">跟随系统</string>
     <string name="demo_current">当前：%1$s</string>
     <string name="demo_custom_title_hint">自定义标题（可选）</string>

@@ -1,12 +1,9 @@
 package io.github.kamiiroawase.zonepicker
 
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
-import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
@@ -15,10 +12,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
-import java.util.Locale
 import androidx.compose.ui.graphics.Color as ComposeColor
 
 class ZonePickerActivity : ComponentActivity() {
@@ -42,13 +37,10 @@ class ZonePickerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Zone names must follow the picker's own UI language. They resolve against this
-        // activity's context — per-app locales (API 33+ framework LocaleManager) are applied
-        // there, never to the application context — and are re-pushed on every recreation,
-        // so an in-app language switch surviving recreation rebuilds the snapshot. Below
-        // API 33 the system locale applies; the AppCompat per-app locale backport is an
-        // AppCompatActivity feature and left behind with it.
-        viewModel.setZoneNames(resolveZoneNames())
+        // Zone names must follow the picker's own UI language, resolved against this
+        // activity's context and re-pushed on every recreation, so an in-app language
+        // switch surviving recreation rebuilds the snapshot
+        viewModel.setZoneNames(PickerLocale.zoneNames(this))
 
         // Stored legacy aliases (US/Pacific, Etc/UTC) and canonical IDs this old tzdata never
         // heard of resolve to the ID the list actually shows, so the checkmark lands on a
@@ -125,7 +117,9 @@ class ZonePickerActivity : ComponentActivity() {
         setContent {
             // The picker mirrors in RTL locales on its own: resolving the layout direction from
             // the locale here works even when the host app has not enabled RTL support.
-            CompositionLocalProvider(LocalLayoutDirection provides resolveLayoutDirection()) {
+            CompositionLocalProvider(
+                LocalLayoutDirection provides PickerLocale.layoutDirection(resources.configuration.locales[0]),
+            ) {
                 MaterialTheme {
                     // Renders whenever a snapshot lands: the first build runs in the
                     // background, and a stale one crossing the DST window is rebuilt in onResume
@@ -162,47 +156,6 @@ class ZonePickerActivity : ComponentActivity() {
         setResult(RESULT_OK, data)
 
         finish()
-    }
-
-    /** Compose's layout direction resolved from the activity locale the way
-     *  View.LAYOUT_DIRECTION_LOCALE resolved it for the old view tree: the activity locale
-     *  reflects both the system and any per-app locale the platform applies there. */
-    private fun resolveLayoutDirection(): LayoutDirection =
-        if (TextUtils.getLayoutDirectionFromLocale(resources.configuration.locales[0]) == View.LAYOUT_DIRECTION_RTL) {
-            LayoutDirection.Rtl
-        } else {
-            LayoutDirection.Ltr
-        }
-
-    /** Zone names follow the picker UI language: the default Chinese strings yield Chinese
-     *  names, while a host localizing them — values-<locale> overrides or a per-app locale
-     *  the activity reflects — gets names in that language. */
-    private fun resolveZoneNames(): ZonePickerViewModel.ZoneNames = ZonePickerViewModel.ZoneNames(
-        nameLocale = resolveNameLocale(),
-        overrides =
-        mapOf(
-            "Asia/Taipei" to getString(R.string.zp_taipei_name),
-            "Asia/Hong_Kong" to getString(R.string.zp_hong_kong_name),
-            "Asia/Macau" to getString(R.string.zp_macau_name),
-        ),
-    )
-
-    /** Chinese while the picker's own strings are the untranslated defaults; otherwise the
-     *  activity locale, which reflects both the system and any per-app locale the platform
-     *  applies there. The baseline resolves the title under Locale.ROOT — the default
-     *  values/ bucket, which not even a host overriding values-zh can shift — so only a
-     *  real localization (values-<locale> resources or a per-app locale) flips the decision. */
-    private fun resolveNameLocale(): Locale {
-        val appContext = applicationContext
-
-        val defaults =
-            Configuration(appContext.resources.configuration).apply { setLocale(Locale.ROOT) }
-
-        return if (appContext.createConfigurationContext(defaults).getString(R.string.zp_title) == getString(R.string.zp_title)) {
-            Locale.SIMPLIFIED_CHINESE
-        } else {
-            resources.configuration.locales[0]
-        }
     }
 
     private companion object {

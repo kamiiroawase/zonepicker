@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
@@ -42,11 +43,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.kamiiroawase.zonepicker.ZonePickerBottomSheet
 import io.github.kamiiroawase.zonepicker.ZonePickerContract
+import io.github.kamiiroawase.zonepicker.ZonePickerDialog
 import io.github.kamiiroawase.zonepicker.ZonePickerRequest
 import io.github.kamiiroawase.zonepicker.ZonePickerResult
 import java.util.Locale
 import java.util.TimeZone
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 class MainActivity : ComponentActivity() {
     /** Compose state, so a pick landing recomposes the label without a manual refresh. */
@@ -101,6 +105,7 @@ class MainActivity : ComponentActivity() {
                             ),
                         )
                     },
+                    onZonePicked = { zoneId = it },
                 )
             }
         }
@@ -145,7 +150,7 @@ private fun DemoTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: Int?) -> Unit) {
+private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: Int?) -> Unit, onZonePicked: (String?) -> Unit) {
     val displayName =
         remember(zoneId) {
             val timeZone = zoneId?.let { TimeZone.getTimeZone(it) } ?: TimeZone.getDefault()
@@ -157,6 +162,14 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
 
     var title by rememberSaveable { mutableStateOf("") }
     var accent by rememberSaveable { mutableStateOf(DemoAccent.Default) }
+
+    // The Compose entries: the same title and accent options as the activity launch above,
+    // hosted in this window instead of a picker activity
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+    var showSheet by rememberSaveable { mutableStateOf(false) }
+
+    val pickerTitle = title.trim().takeIf { it.isNotEmpty() }
+    val pickerAccent = accent.composeColor()
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -231,6 +244,57 @@ private fun DemoScreen(zoneId: String?, onPick: (title: String?, accentColor: In
             ) {
                 Text(stringResource(R.string.demo_pick), fontSize = 16.sp)
             }
+
+            Row(
+                modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.demo_pick_dialog))
+                }
+
+                OutlinedButton(
+                    onClick = { showSheet = true },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.demo_pick_sheet))
+                }
+            }
         }
     }
+
+    if (showDialog) {
+        ZonePickerDialog(
+            onResult = { result ->
+                onZonePicked((result as? ZonePickerResult.Selected)?.zoneId)
+                showDialog = false
+            },
+            onDismissRequest = { showDialog = false },
+            selectedZoneId = zoneId,
+            accentColor = pickerAccent,
+            title = pickerTitle,
+        )
+    }
+
+    if (showSheet) {
+        ZonePickerBottomSheet(
+            onResult = { result ->
+                onZonePicked((result as? ZonePickerResult.Selected)?.zoneId)
+                showSheet = false
+            },
+            onDismissRequest = { showSheet = false },
+            selectedZoneId = zoneId,
+            accentColor = pickerAccent,
+            title = pickerTitle,
+        )
+    }
 }
+
+/** The accent as the Compose entries take it: [ComposeColor.Unspecified] keeps the library default. */
+private fun DemoAccent.composeColor(): ComposeColor = color?.let(::ComposeColor) ?: ComposeColor.Unspecified

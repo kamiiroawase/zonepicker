@@ -4,7 +4,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kamiiroawase/zonepicker.svg)](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
-Android 时区选择器库：**一个 Activity 完成时区选择**——常用时区分组列表、全量搜索与「跟随系统」选项，Jetpack Compose 构建，Material 风格，自动适配深色模式与 edge-to-edge。
+Android 时区选择器库：**一个 Activity 完成时区选择**——常用时区分组列表、全量搜索与「跟随系统」选项，Jetpack Compose 构建，Material 风格，自动适配深色模式与 edge-to-edge。Compose 宿主还可以用 **`ZonePickerDialog` / `ZonePickerBottomSheet`** 把同一套选择器以对话框或底部弹层直接嵌入自己的界面。
 
 [English version](README.en.md)
 
@@ -60,9 +60,37 @@ pickerLauncher.launch(
 )
 ```
 
+### Compose 入口：对话框与底部弹层
+
+宿主本身用 Compose 时，可以不启动 Activity，直接在组合里弹出同一个选择器（3.1 起）。列表、搜索与「跟随系统」与全屏入口完全一致；结果沿用 `ZonePickerResult`，只回调「选中 / 跟随系统」——取消不经过 `onResult`，由 `onDismissRequest` 单独表达。可见性由调用方持有，两个回调里都应关闭：
+
+```kotlin
+var showDialog by rememberSaveable { mutableStateOf(false) }
+
+if (showDialog) {
+    ZonePickerDialog(
+        onResult = { result ->
+            when (result) {
+                is ZonePickerResult.Selected -> currentZoneId = result.zoneId
+                ZonePickerResult.FollowSystem -> currentZoneId = null
+                ZonePickerResult.Canceled -> Unit   // 对话框入口不会回调
+            }
+            showDialog = false
+        },
+        onDismissRequest = { showDialog = false },
+        selectedZoneId = currentZoneId,            // null 视为跟随系统
+        accentColor = Color(0xFF3F51B5),           // 可选，默认 #F05E1C；作用于选中标记与搜索光标
+        title = "选择时区",                          // 可选，默认「时区」
+    )
+}
+```
+
+`ZonePickerBottomSheet(...)` 参数相同，以 Material 底部弹层呈现；点选行后先播收起动画，动画结束才回调 `onResult`。
+
 要点：
 
 - 界面由 Jetpack Compose 渲染，宿主无需任何 Compose 配置
+- 除全屏 Activity 外提供 `ZonePickerDialog` / `ZonePickerBottomSheet` 两个 Compose 入口，可直接嵌入任意 Compose 界面，无需 Activity 结果接线
 - 列表默认 27 个常用时区、覆盖全部 GMT 偏移，东八区开头；「跟随系统」置顶，选中项打勾
 - 全量即时搜索：时区显示名 / 时区 ID / GMT 偏移（`gmt+8`、`utc-5` 均可）/ 国家中英文名（搜「中国」可带出大陆、港澳台与新加坡时区）
 - 按 IANA `backward` 剔除全部旧别名（`US/Pacific`、`Japan` 等）；传入旧别名 ID 会自动映射到对应展示项
@@ -89,7 +117,7 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # 数据逻辑单元测试
 ```
 
-45 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤、强调色与 Activity Result 契约。质量门禁全挂在 `build` 上：Spotless 格式与 Android Lint。演示工程为 `app` 模块（`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
+47 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式与 Android Lint。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
 
 ## 许可
 

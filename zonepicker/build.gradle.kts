@@ -87,17 +87,20 @@ android {
 }
 
 dependencies {
-    // api, not implementation: ZonePickerContract's signature exposes ActivityResultContract,
-    // which must reach consumers' compile classpath
+    // api, not implementation: ZonePickerContract's signature exposes ActivityResultContract
+    // and the Compose entries expose Color/Modifier, which must reach consumers' compile
+    // classpath
     api(libs.androidx.activity)
+    api(platform(libs.androidx.compose.bom))
+    api(libs.androidx.compose.ui)
     implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
