@@ -1,5 +1,6 @@
 package io.github.kamiiroawase.zonepicker
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -52,6 +53,12 @@ class ZonePickerActivity : ComponentActivity() {
      *  cannot happen in attachBaseContext — getIntent() still returns null there (the
      *  framework assigns the activity's intent only after attachBaseContext runs) — so the
      *  intent is read here in onCreate and the wrap enters through the composition. */
+    // AppBundleLocaleChanges wants Play Core language downloads beside any dynamic locale
+    // change: this wrap is the picker's explicit EXTRA_LOCALE channel (an in-app language
+    // switcher, API 26-32 included), not a resource-locale lookup that could miss split
+    // assets — which language splits to ship is the host app's bundle decision, and there is
+    // nothing for a library to download
+    @SuppressLint("AppBundleLocaleChanges")
     private fun pickerContext(): Context {
         val locale = pickerLocale ?: return this
 
