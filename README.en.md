@@ -14,7 +14,7 @@ Published on [Maven Central](https://central.sonatype.com/artifact/io.github.kam
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:3.0.1")
+    implementation("io.github.kamiiroawase:zonepicker:3.1.0")
 }
 ```
 
@@ -68,7 +68,7 @@ pickerLauncher.launch(
 
 ### Compose entries: dialog and bottom sheet
 
-Hosts already using Compose can skip the Activity launch and drop the same picker straight into their own composition (as of 3.1). The list, search and follow-system option are identical to the full-screen entry; results reuse `ZonePickerResult` and only ever deliver selected / follow-system — cancellation never arrives through `onResult`, it is expressed by `onDismissRequest` alone. The caller owns visibility; close in both callbacks:
+Hosts already using Compose can skip the Activity launch and drop the same picker straight into their own composition (as of 3.1.0). The list, search and follow-system option are identical to the full-screen entry; results reuse `ZonePickerResult` and only ever deliver selected / follow-system — cancellation never arrives through `onResult`, it is expressed by `onDismissRequest` alone. The caller owns visibility; close in both callbacks:
 
 ```kotlin
 var showDialog by rememberSaveable { mutableStateOf(false) }
@@ -125,7 +125,26 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # the data-logic unit tests
 ```
 
-55 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting, Android Lint and the public-API golden check (`api/zonepicker.api` — see [CONTRIBUTING.md](CONTRIBUTING.md)). The API reference publishes to GitHub Pages from CI: <https://kamiiroawase.github.io/zonepicker/>. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
+55 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting, Android Lint and the public-API golden check (see below). The API reference publishes to GitHub Pages from CI: <https://kamiiroawase.github.io/zonepicker/>. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
+
+### The public-API golden check
+
+`zonepicker/api/zonepicker.api` is the golden dump of the published surface; `apiCheck` (part of `build`) fails on any drift. If you intentionally change the public API: run `./gradlew :zonepicker:apiDump`, review the diff and commit it alongside the change. A new public type also needs an entry in `publicApiClasses` in `zonepicker/build.gradle.kts`.
+
+### Adding a translation
+
+Zone display names need no translation — they localize through ICU in whatever locale the picker runs — so a translation is exactly one file:
+
+1. Copy `zonepicker/src/main/res/values/strings.xml` to `zonepicker/src/main/res/values-<locale>/strings.xml` (e.g. `values-ja`).
+2. Translate the eight UI strings (`zp_title` … `zp_back`).
+3. Leave `zp_taipei_name`, `zp_hong_kong_name` and `zp_macau_name` **empty** — they are the greater-China display-name overrides, meaningful only in Chinese variants; ICU supplies the names in every other language.
+4. Run `./gradlew build`. Android Lint fails on a bucket missing keys (`MissingTranslation`), so a partial file cannot slip through.
+
+### Adding a city or country search alias
+
+Aliases live in `COUNTRY_ZONES` and `CITY_ZONE_ALIASES` in `zonepicker/src/main/kotlin/io/github/kamiiroawase/zonepicker/ZoneData.kt`. Include both Chinese scripts where they differ (东京 / 東京); English names need no entry when they already appear inside the zone ID. Add the cases to `ZoneDataTest` — search behavior is unit-tested, and the tests document the matching rules.
+
+Run `./gradlew spotlessApply` before pushing — a formatting violation fails the build. Comments in this codebase explain *why* something is shaped the way it is, not *what* the next line does; matching that style helps a PR land quickly.
 
 ## License
 

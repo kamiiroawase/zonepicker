@@ -14,7 +14,7 @@ Android 时区选择器库：**一个 Activity 完成时区选择**——常用�
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:3.0.1")
+    implementation("io.github.kamiiroawase:zonepicker:3.1.0")
 }
 ```
 
@@ -68,7 +68,7 @@ pickerLauncher.launch(
 
 ### Compose 入口：对话框与底部弹层
 
-宿主本身用 Compose 时，可以不启动 Activity，直接在组合里弹出同一个选择器（3.1 起）。列表、搜索与「跟随系统」与全屏入口完全一致；结果沿用 `ZonePickerResult`，只回调「选中 / 跟随系统」——取消不经过 `onResult`，由 `onDismissRequest` 单独表达。可见性由调用方持有，两个回调里都应关闭：
+宿主本身用 Compose 时，可以不启动 Activity，直接在组合里弹出同一个选择器（3.1.0 起）。列表、搜索与「跟随系统」与全屏入口完全一致；结果沿用 `ZonePickerResult`，只回调「选中 / 跟随系统」——取消不经过 `onResult`，由 `onDismissRequest` 单独表达。可见性由调用方持有，两个回调里都应关闭：
 
 ```kotlin
 var showDialog by rememberSaveable { mutableStateOf(false) }
@@ -125,7 +125,26 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # 数据逻辑单元测试
 ```
 
-55 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、锚定排序、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式、Android Lint 与公开 API 金标检查（`api/zonepicker.api`，详见 [CONTRIBUTING.md](CONTRIBUTING.md)）。API 参考由 CI 自动发布到 GitHub Pages：<https://kamiiroawase.github.io/zonepicker/>。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
+55 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、锚定排序、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式、Android Lint 与公开 API 金标检查（见下文）。API 参考由 CI 自动发布到 GitHub Pages：<https://kamiiroawase.github.io/zonepicker/>。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
+
+### 公开 API 金标检查
+
+`zonepicker/api/zonepicker.api` 是已发布 API 的金标快照，`apiCheck`（挂在 `build` 上）在任何漂移时失败。有意变更公开 API 时：运行 `./gradlew :zonepicker:apiDump`，审查 diff 并随代码一起提交；新增公开类型还需在 `zonepicker/build.gradle.kts` 的 `publicApiClasses` 中登记。
+
+### 添加翻译
+
+时区显示名无需翻译（由 ICU 按运行语言本地化），一个语言只需一个文件：
+
+1. 把 `zonepicker/src/main/res/values/strings.xml` 复制到 `zonepicker/src/main/res/values-<locale>/strings.xml`（如 `values-ja`）；
+2. 翻译 8 条界面字符串（`zp_title` … `zp_back`）；
+3. `zp_taipei_name` / `zp_hong_kong_name` / `zp_macau_name` 保持**为空**——它们是大中华区显示名覆盖，只在中文变体中有意义，其他语言的名称由 ICU 提供；
+4. 运行 `./gradlew build`。Android Lint 会在语言桶缺 key 时失败（`MissingTranslation`），不完整的翻译混不进来。
+
+### 添加城市 / 国家搜索别名
+
+别名表在 `zonepicker/src/main/kotlin/io/github/kamiiroawase/zonepicker/ZoneData.kt` 的 `COUNTRY_ZONES` 与 `CITY_ZONE_ALIASES`。中文简繁写法有差异时两个都收（东京 / 東京）；英文名已含在时区 ID 里时无需条目。请同步补充 `ZoneDataTest`——搜索行为有单元测试，测试即匹配规则的文档。
+
+推送前运行 `./gradlew spotlessApply`——格式违规会导致构建失败。本库的注释解释「为什么这样写」而非「这行在做什么」，保持同样风格能让 PR 更快合入。
 
 ## 许可
 
