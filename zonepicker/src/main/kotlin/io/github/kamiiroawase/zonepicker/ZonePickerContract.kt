@@ -7,7 +7,13 @@ import androidx.activity.result.contract.ActivityResultContract
 import java.util.Locale
 
 /** Parameters for [ZonePickerContract]; a null selectedZoneId means "follow system". */
-data class ZonePickerRequest(val selectedZoneId: String? = null, val accentColor: Int? = null, val title: CharSequence? = null, val locale: Locale? = null)
+data class ZonePickerRequest(
+    val selectedZoneId: String? = null,
+    val accentColor: Int? = null,
+    val title: CharSequence? = null,
+    val locale: Locale? = null,
+    val defaultZoneIds: List<String>? = null,
+)
 
 /** Picker outcome; distinguishes follow-system from cancellation, unlike the raw intent API. */
 sealed interface ZonePickerResult {
@@ -30,7 +36,7 @@ internal fun parsePickerResult(resultCode: Int, zoneId: String?): ZonePickerResu
 /** Type-safe contract for launching the picker via registerForActivityResult. */
 class ZonePickerContract : ActivityResultContract<ZonePickerRequest, ZonePickerResult>() {
     override fun createIntent(context: Context, input: ZonePickerRequest): Intent =
-        ZonePicker.createIntent(context, input.selectedZoneId, input.accentColor, input.title, input.locale)
+        ZonePicker.createIntent(context, input.selectedZoneId, input.accentColor, input.title, input.locale, input.defaultZoneIds)
 
     override fun parseResult(resultCode: Int, data: Intent?): ZonePickerResult = parsePickerResult(resultCode, data?.getStringExtra(ZonePicker.EXTRA_ZONE_ID))
 }

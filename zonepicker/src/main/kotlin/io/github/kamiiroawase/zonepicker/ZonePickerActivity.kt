@@ -72,6 +72,10 @@ class ZonePickerActivity : ComponentActivity() {
         // switch surviving recreation rebuilds the snapshot
         viewModel.setZoneNames(PickerLocale.zoneNames(this))
 
+        // A host-supplied default-list zone set, when it passes one; the first push starts
+        // the initial build under both inputs
+        viewModel.setDefaultZoneIds(intent.getStringArrayListExtra(ZonePicker.EXTRA_DEFAULT_ZONE_IDS)?.takeIf { it.isNotEmpty() })
+
         // Stored legacy aliases (US/Pacific, Etc/UTC) and canonical IDs this old tzdata never
         // heard of resolve to the ID the list actually shows, so the checkmark lands on a
         // visible row instead of silently disappearing.

@@ -55,6 +55,9 @@ import androidx.compose.ui.window.DialogProperties
  *   default ([Color.Unspecified], resolving the overridable `zpPrimaryColor` resource) when
  *   omitted — any alpha in the value is forced opaque
  * @param title panel title; the default `zp_title` string ("时区") when null
+ * @param defaultZoneIds the default list's zones (e.g. an app's key markets); the library's
+ *   curated 27-zone list when null. Unresolvable IDs drop out, and every GMT offset the
+ *   list leaves uncovered still gets one representative zone
  */
 @Composable
 fun ZonePickerDialog(
@@ -63,8 +66,9 @@ fun ZonePickerDialog(
     selectedZoneId: String? = null,
     accentColor: Color = Color.Unspecified,
     title: String? = null,
+    defaultZoneIds: List<String>? = null,
 ) {
-    val state = rememberZonePickerState(selectedZoneId, accentColor)
+    val state = rememberZonePickerState(selectedZoneId, accentColor, defaultZoneIds)
     val snapshot by state.snapshot.collectAsState()
     val scrollSelectionInitially = remember { selectedZoneId != null }
 
@@ -92,7 +96,7 @@ fun ZonePickerDialog(
                 Modifier
                     .imePadding()
                     .padding(horizontal = 16.dp)
-                    .widthIn(max = 560.dp)
+                    .widthIn(max = MAX_CONTENT_WIDTH)
                     .fillMaxWidth()
                     // Most of the screen but never all of it: the centered card keeps clear
                     // of the status and navigation bars on every size class

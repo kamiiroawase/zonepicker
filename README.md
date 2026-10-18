@@ -36,11 +36,14 @@ pickerLauncher.launch(
         accentColor = Color.parseColor("#3F51B5"),   // 可选，默认 #F05E1C；作用于头部与底部色带、选中标记
         title = "选择时区",                           // 可选，默认「时区」
         locale = inAppLocale,                        // 可选；应用内语言，文字/时区名/RTL 均跟随
+        defaultZoneIds = marketZones,                // 可选；自定义默认列表（如应用主要市场的时区）
     )
 )
 ```
 
 不传 `locale` 时选择器跟随系统语言（API 33+ 跟随系统级 per-app 语言）；应用内语言切换在 API 26-32 上没有系统通道可读，需像上面这样显式传入。Compose 入口（对话框 / 底部弹层）渲染在宿主界面内，天然跟随宿主语言，无需此参数。
+
+默认列表按设备当前时区环形排序（自己的偏移组开头）；传 `defaultZoneIds` 时改为宿主指定的常用时区，未被覆盖的 GMT 偏移仍会自动补一个代表时区，保证全偏移可达。两个 Compose 入口的同名参数含义相同。
 
 不需要区分取消与跟随系统时，用基础写法即可：
 
@@ -95,10 +98,10 @@ if (showDialog) {
 - 界面由 Jetpack Compose 渲染，宿主无需任何 Compose 配置
 - 除全屏 Activity 外提供 `ZonePickerDialog` / `ZonePickerBottomSheet` 两个 Compose 入口，可直接嵌入任意 Compose 界面，无需 Activity 结果接线
 - 内置英文（默认）与简体/繁体中文界面，按系统或应用内语言自动选择；时区显示名经 ICU 以同一语言生成，其他语言回退英文界面而时区名仍随系统语言
-- 列表默认 27 个常用时区、覆盖全部 GMT 偏移，东八区开头；「跟随系统」置顶，选中项打勾
+- 列表默认 27 个常用时区、覆盖全部 GMT 偏移，从设备当前时区所在的偏移组环形排起（中文设备即东八区开头）；可传 `defaultZoneIds` 自定义常用列表，未覆盖的偏移仍自动补代表时区；「跟随系统」置顶，选中项打勾
 - 全量即时搜索：时区显示名 / 时区 ID / GMT 偏移（`gmt+8`、`utc-5` 均可）/ 国家中英文名（搜「中国」可带出大陆、港澳台与新加坡时区）/ 常用城市中文名（上海、纽约、東京，简繁均可）
 - 按 IANA `backward` 剔除全部旧别名（`US/Pacific`、`Japan` 等）；传入旧别名 ID 会自动映射到对应展示项
-- 自动适配深色模式与 edge-to-edge（状态栏 / 导航栏 / 键盘），不受宿主 targetSdk 影响
+- 自动适配深色模式与 edge-to-edge（状态栏 / 导航栏 / 键盘），不受宿主 targetSdk 影响；平板与横屏下内容限宽居中
 - 强调色贯穿头部与底部导航栏区域，标题、图标与选中标记按对比度自动搭配黑白
 - 深浅两套配色与 `zp_*` 字符串可用同名资源覆盖定制
 - AAR 内置 baseline profile：AGP 8+ 的宿主构建自动合并，Profileinstaller 经 Compose 传递已在宿主类路径上，安装或首启即完成 AOT 编译，三个入口的首开速度都受益
@@ -122,7 +125,7 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # 数据逻辑单元测试
 ```
 
-50 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式与 Android Lint。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
+55 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、锚定排序、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式与 Android Lint。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
 
 ## 许可
 

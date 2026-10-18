@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
@@ -77,6 +78,34 @@ class ZonePickerViewModelTest {
                     .first { it.zoneId == "Asia/Shanghai" }
                     .displayName,
             )
+        }
+    }
+
+    @Test
+    fun `changed default zone ids rebuild, equal ones do not`() = runTest {
+        withTestViewModel { viewModel ->
+            viewModel.setZoneNames(CHINESE_NAMES)
+
+            advanceUntilIdle()
+
+            val first = viewModel.snapshot.value
+
+            assertNotNull(first)
+
+            viewModel.setDefaultZoneIds(listOf("Asia/Tokyo"))
+
+            advanceUntilIdle()
+
+            assertNotSame(first, viewModel.snapshot.value)
+            assertTrue(viewModel.snapshot.value!!.defaultZones.any { it.zoneId == "Asia/Tokyo" })
+
+            val second = viewModel.snapshot.value
+
+            viewModel.setDefaultZoneIds(listOf("Asia/Tokyo"))
+
+            advanceUntilIdle()
+
+            assertSame(second, viewModel.snapshot.value)
         }
     }
 

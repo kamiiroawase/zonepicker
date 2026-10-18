@@ -28,17 +28,20 @@ internal object ZoneData {
         return "GMT$sign%02d:%02d".format(Locale.ROOT, absSeconds / 3600, absSeconds % 3600 / 60)
     }
 
-    /** Circular offset key starting at GMT+08: +08…+11, then +12 with −12, +13 with −11 and
-     *  +14 with −10 (offsets 24h apart share a slot — the same wall-clock time), then −09…−01
-     *  and +00…+07. */
-    fun wrapOffset(offsetSeconds: Int): Int = (offsetSeconds - 8 * 3600).mod(24 * 3600)
+    /** Circular offset key starting at [anchorSeconds]: the anchor's own offset sorts first,
+     *  then offsets clockwise away from it — offsets 24h apart share a slot (the same
+     *  wall-clock time). Defaults to GMT+08, the library's historical ordering; the picker
+     *  passes the device's current offset so the user's own zone group leads the list. */
+    fun wrapOffset(offsetSeconds: Int, anchorSeconds: Int = DEFAULT_ANCHOR_OFFSET_SECONDS): Int = (offsetSeconds - anchorSeconds).mod(24 * 3600)
 
-    /** All zones sorted by circular offset then display name; offsets snapshot at nowMillis (DST aware). */
+    /** All zones sorted by circular offset then display name; offsets snapshot at nowMillis
+     *  (DST aware), the circular order starting at [anchorOffsetSeconds]. */
     fun buildZones(
         nowMillis: Long,
         nameOverrides: Map<String, String> = emptyMap(),
         ids: Array<String> = TimeZone.getAvailableIDs(),
         nameLocale: Locale = Locale.SIMPLIFIED_CHINESE,
+        anchorOffsetSeconds: Int = DEFAULT_ANCHOR_OFFSET_SECONDS,
     ): List<Zone> {
         val availableIds = ids.toHashSet()
 
@@ -56,21 +59,25 @@ internal object ZoneData {
                         ?: timeZone.getDisplayName(false, TimeZone.LONG, nameLocale),
                     offsetSeconds = timeZone.getOffset(nowMillis) / 1000,
                 )
-            }.sortedWith(zoneOrder)
+            }.sortedWith(zoneOrder(anchorOffsetSeconds))
     }
+
+    /** The historical anchor of the circular ordering: GMT+08, so a GMT+08 device sees the
+     *  exact order the library always shipped; every other device anchors at its own offset. */
+    private const val DEFAULT_ANCHOR_OFFSET_SECONDS = 8 * 3600
 
     /** Chinese zones have a fixed order (Shanghai, Hong Kong, Macau, Taipei); others follow. */
     private fun cnOrder(zoneId: String): Int = CN_ZONE_ORDER[zoneId] ?: CN_ZONE_ORDER.size
 
-    /** Shared sort order: circular offset from GMT+08, Chinese zone order, display name, then
-     *  zone ID — the final key pins the order of same-name pairs across devices and tzdata versions. */
-    private val zoneOrder =
-        compareBy<Zone>(
-            { wrapOffset(it.offsetSeconds) },
-            { cnOrder(it.zoneId) },
-            { it.displayName },
-            { it.zoneId },
-        )
+    /** Shared sort order: circular offset from the anchor, Chinese zone order, display name,
+     *  then zone ID — the final key pins the order of same-name pairs across devices and
+     *  tzdata versions. */
+    private fun zoneOrder(anchorSeconds: Int) = compareBy<Zone>(
+        { wrapOffset(it.offsetSeconds, anchorSeconds) },
+        { cnOrder(it.zoneId) },
+        { it.displayName },
+        { it.zoneId },
+    )
 
     /** Redundant UTC/GMT aliases hidden from the list; bare UTC/GMT and Etc/GMT±N stay. */
     private val HIDDEN_ZONE_IDS =
@@ -389,9 +396,12 @@ internal object ZoneData {
             "Etc/UTC" to "UTC",
         )
 
-    /** Default list: popular zones plus one representative for each uncovered offset. */
-    fun defaultZones(zones: List<Zone>): List<Zone> {
-        val preferred = zones.filter { it.zoneId in PREFERRED_ZONE_IDS }
+    /** Default list: the preferred zones — the host's [preferredZoneIds], or the library's
+     *  curated 27 when null — plus one representative for each offset they leave uncovered,
+     *  so every GMT offset stays reachable whatever the host passes. Unresolvable IDs in a
+     *  host list simply match no zone and drop out. */
+    fun defaultZones(zones: List<Zone>, preferredZoneIds: Set<String>? = null, anchorOffsetSeconds: Int = DEFAULT_ANCHOR_OFFSET_SECONDS): List<Zone> {
+        val preferred = zones.filter { it.zoneId in (preferredZoneIds ?: PREFERRED_ZONE_IDS) }
 
         val covered = preferred.map { it.offsetSeconds }.toSet()
 
@@ -403,7 +413,7 @@ internal object ZoneData {
                     group.firstOrNull { !it.zoneId.startsWith("Etc/") } ?: group.firstOrNull()
                 }
 
-        return (preferred + fillers).sortedWith(zoneOrder)
+        return (preferred + fillers).sortedWith(zoneOrder(anchorOffsetSeconds))
     }
 
     /** Search matching against display name, zone ID and offset label; case-insensitive and

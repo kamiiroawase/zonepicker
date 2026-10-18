@@ -1,0 +1,13 @@
+<resources>
+    <string name="zp_title">시간대</string>
+    <string name="zp_follow_system">시스템 설정 따르기</string>
+    <string name="zp_search_hint">시간대, 도시 또는 국가 검색</string>
+    <string name="zp_no_result">일치하는 시간대가 없습니다</string>
+    <string name="zp_loading">로드 중</string>
+    <string name="zp_clear_search">검색 지우기</string>
+    <string name="zp_selected">선택됨</string>
+    <string name="zp_back">뒤로</string>
+    <string name="zp_taipei_name"></string>
+    <string name="zp_hong_kong_name"></string>
+    <string name="zp_macau_name"></string>
+</resources>

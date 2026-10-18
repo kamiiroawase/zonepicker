@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
@@ -15,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -58,6 +60,9 @@ import kotlinx.coroutines.launch
  *   default ([Color.Unspecified], resolving the overridable `zpPrimaryColor` resource) when
  *   omitted — any alpha in the value is forced opaque
  * @param title panel title; the default `zp_title` string ("时区") when null
+ * @param defaultZoneIds the default list's zones (e.g. an app's key markets); the library's
+ *   curated 27-zone list when null. Unresolvable IDs drop out, and every GMT offset the
+ *   list leaves uncovered still gets one representative zone
  */
 // ModalBottomSheet remains experimental in Material 3; the opt-in stays on this internal
 // use site — the public signature exposes nothing experimental
@@ -69,8 +74,9 @@ fun ZonePickerBottomSheet(
     selectedZoneId: String? = null,
     accentColor: Color = Color.Unspecified,
     title: String? = null,
+    defaultZoneIds: List<String>? = null,
 ) {
-    val state = rememberZonePickerState(selectedZoneId, accentColor)
+    val state = rememberZonePickerState(selectedZoneId, accentColor, defaultZoneIds)
     val snapshot by state.snapshot.collectAsState()
     val scrollSelectionInitially = remember { selectedZoneId != null }
 
@@ -112,6 +118,10 @@ fun ZonePickerBottomSheet(
             Column(
                 modifier =
                 Modifier
+                    // Capped and centered on wide screens: the sheet surface keeps its own
+                    // width, the picker content never stretches tablet-wide
+                    .align(Alignment.CenterHorizontally)
+                    .widthIn(max = MAX_CONTENT_WIDTH)
                     .imePadding()
                     .navigationBarsPadding()
                     .padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 16.dp),

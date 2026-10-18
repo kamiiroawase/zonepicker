@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.util.TimeZone
 
 /** Caches the zone snapshot across configuration changes; builds it off the main thread and
  *  rebuilds when the DST window expires. */
@@ -30,6 +31,9 @@ internal class ZonePickerViewModel(
      *  the activity can supply these. Main-thread confined, like every entry point. */
     private var zoneNames: ZoneNames? = null
 
+    /** Host-supplied default-list zones, or null for the library's curated 27. */
+    private var defaultZoneIds: List<String>? = null
+
     /** The in-flight build; a newer rebuild cancels and replaces it, and clearing the
      *  ViewModel cancels it along with the scope. */
     private var buildJob: Job? = null
@@ -40,6 +44,16 @@ internal class ZonePickerViewModel(
         if (zoneNames == names) return
 
         zoneNames = names
+
+        rebuild()
+    }
+
+    /** Same contract as [setZoneNames]: the first call starts the initial build, a changed
+     *  value rebuilds, an equal one does not. */
+    fun setDefaultZoneIds(ids: List<String>?) {
+        if (defaultZoneIds == ids) return
+
+        defaultZoneIds = ids
 
         rebuild()
     }
@@ -74,14 +88,21 @@ internal class ZonePickerViewModel(
     private fun buildSnapshot(names: ZoneNames): Snapshot {
         val now = nowMillis()
 
+        // The default list anchors its circular order at the device's own offset — DST-aware
+        // at the same instant the zone offsets snapshot — so the user's zone group leads.
+        // A system-timezone change mid-session only catches up at the next rebuild window;
+        // picking a zone because you traveled means the anchor was already right at open
+        val anchorOffsetSeconds = TimeZone.getDefault().getOffset(now) / 1000
+
         val zones =
             ZoneData.buildZones(
                 now,
                 names.overrides,
                 nameLocale = names.nameLocale,
+                anchorOffsetSeconds = anchorOffsetSeconds,
             )
 
-        return Snapshot(zones, ZoneData.defaultZones(zones), now)
+        return Snapshot(zones, ZoneData.defaultZones(zones, defaultZoneIds?.toSet(), anchorOffsetSeconds), now)
     }
 
     /** Zone display-name inputs: the generation locale plus host-overridable names. */

@@ -80,6 +80,9 @@ internal fun ZonePickerScreen(
                     // No bottom margin: it would read as a translucent strip between the
                     // list card and the accent band; the band sits flush under the card
                     .padding(start = 16.dp, top = 16.dp, end = 16.dp),
+                // The body's children cap at MAX_CONTENT_WIDTH on wide screens and center
+                // here; phones fill the width and never notice
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 ZonePickerBody(
                     snapshot = snapshot,

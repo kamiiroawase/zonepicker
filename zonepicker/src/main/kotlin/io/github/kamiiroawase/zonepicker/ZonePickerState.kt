@@ -30,7 +30,7 @@ internal class ZonePickerState(
  *  and a composable-entry pick agree. Mirrors the activity's lifecycle contract — names push
  *  on (re)composition, a DST-staleness check on every host resume. */
 @Composable
-internal fun rememberZonePickerState(selectedZoneId: String?, accentColor: Color): ZonePickerState {
+internal fun rememberZonePickerState(selectedZoneId: String?, accentColor: Color, defaultZoneIds: List<String>? = null): ZonePickerState {
     val viewModel = viewModel<ZonePickerViewModel>()
     val context = LocalContext.current
 
@@ -39,6 +39,8 @@ internal fun rememberZonePickerState(selectedZoneId: String?, accentColor: Color
     val zoneNames = remember(context) { PickerLocale.zoneNames(context) }
 
     LaunchedEffect(zoneNames) { viewModel.setZoneNames(zoneNames) }
+
+    LaunchedEffect(defaultZoneIds) { viewModel.setDefaultZoneIds(defaultZoneIds) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.requestFreshSnapshot()

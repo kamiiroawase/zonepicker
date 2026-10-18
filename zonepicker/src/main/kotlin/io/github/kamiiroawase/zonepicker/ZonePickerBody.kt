@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -67,6 +68,12 @@ private val ZoneRow.key: Any
             is ZoneRow.Header -> "header:$title"
             is ZoneRow.Item -> zoneId
         }
+
+/** Content width every entry caps on wide screens (tablets, landscape phones): the picker
+ *  stays a centered column instead of stretching tablet-wide. The callers' chrome — the
+ *  activity's accent bands, the dialog card, the sheet surface — spans whatever width it
+ *  spans; only the interactive column obeys the cap. */
+internal val MAX_CONTENT_WIDTH = 600.dp
 
 /** The picker's interactive column — search field, follow-system row and the grouped zone
  *  list — shared verbatim by every entry point: the full-screen activity page, the dialog
@@ -170,6 +177,7 @@ internal fun ColumnScope.ZonePickerBody(
         surfaceColor = surfaceColor,
         textSecondary = textSecondary,
         markColor = markColor,
+        modifier = Modifier.widthIn(max = MAX_CONTENT_WIDTH),
     )
 
     FollowSystemRow(
@@ -178,7 +186,10 @@ internal fun ColumnScope.ZonePickerBody(
         surfaceColor = surfaceColor,
         textPrimary = textPrimary,
         markColor = markColor,
-        modifier = Modifier.padding(top = 12.dp),
+        modifier =
+        Modifier
+            .padding(top = 12.dp)
+            .widthIn(max = MAX_CONTENT_WIDTH),
     )
 
     Surface(
@@ -186,6 +197,7 @@ internal fun ColumnScope.ZonePickerBody(
         color = surfaceColor,
         modifier =
         Modifier
+            .widthIn(max = MAX_CONTENT_WIDTH)
             .fillMaxWidth()
             .then(
                 if (listMaxHeight == null) {
@@ -269,11 +281,12 @@ private fun SearchField(
     surfaceColor: Color,
     textSecondary: Color,
     markColor: Color,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = surfaceColor,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(
             modifier =

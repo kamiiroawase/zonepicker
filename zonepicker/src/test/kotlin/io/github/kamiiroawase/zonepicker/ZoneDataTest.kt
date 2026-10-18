@@ -18,6 +18,40 @@ class ZoneDataTest {
     }
 
     @Test
+    fun `wrapOffset anchors at the caller's offset`() {
+        assertEquals(0, ZoneData.wrapOffset(-5 * 3600, anchorSeconds = -5 * 3600))
+        assertEquals(3600, ZoneData.wrapOffset(-4 * 3600, anchorSeconds = -5 * 3600))
+
+        // 13 hours clockwise from a GMT-5 anchor
+        assertEquals(13 * 3600, ZoneData.wrapOffset(8 * 3600, anchorSeconds = -5 * 3600))
+    }
+
+    @Test
+    fun `zone list leads with the anchor's own offset group`() {
+        // Epoch instant: New York sits on EST (GMT-5), Shanghai on GMT+8
+        val newYorkAnchored = ZoneData.buildZones(0L, anchorOffsetSeconds = -5 * 3600)
+
+        assertEquals(-5 * 3600, newYorkAnchored.first().offsetSeconds)
+        assertEquals(-5 * 3600, ZoneData.defaultZones(newYorkAnchored, anchorOffsetSeconds = -5 * 3600).first().offsetSeconds)
+
+        // The default anchor keeps the historical GMT+8 lead
+        assertEquals(8 * 3600, ZoneData.buildZones(0L).first().offsetSeconds)
+    }
+
+    @Test
+    fun `defaultZones prefers a host-supplied list`() {
+        val zones = ZoneData.buildZones(0L)
+
+        val custom = ZoneData.defaultZones(zones, preferredZoneIds = setOf("Asia/Tokyo"))
+
+        assertTrue(custom.any { it.zoneId == "Asia/Tokyo" })
+
+        // The coverage invariant survives a custom list: every offset still represented
+        assertEquals(zones.map { it.offsetSeconds }.toSet(), custom.map { it.offsetSeconds }.toSet())
+        assertTrue(custom.size < zones.size)
+    }
+
+    @Test
     fun `offsetLabel formats sign and padding`() {
         assertEquals("GMT+08:00", ZoneData.offsetLabel(8 * 3600))
         assertEquals("GMT-05:30", ZoneData.offsetLabel(-(5 * 3600 + 1800)))
