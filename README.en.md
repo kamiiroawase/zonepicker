@@ -97,6 +97,7 @@ Highlights:
 - Automatic dark-mode and edge-to-edge adaptation (status bar / navigation bar / keyboard), independent of the host's targetSdk
 - The accent runs through the header band and the bottom navigation-bar area; titles, icons and selection marks pair black/white by contrast
 - The light/dark palettes and the `zp_*` strings are overridable via same-name resources
+- Ships a baseline profile inside the AAR — AGP 8+ merges it into the consuming build, Profileinstaller (already on the classpath through Compose) AOT-compiles it at install or first launch, and every entry's first open benefits
 - TalkBack announces the selected state; the back arrow mirrors automatically under RTL
 - The result returns via Activity Result; persistence stays with the host
 

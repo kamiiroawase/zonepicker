@@ -97,6 +97,7 @@ if (showDialog) {
 - 自动适配深色模式与 edge-to-edge（状态栏 / 导航栏 / 键盘），不受宿主 targetSdk 影响
 - 强调色贯穿头部与底部导航栏区域，标题、图标与选中标记按对比度自动搭配黑白
 - 深浅两套配色与 `zp_*` 字符串可用同名资源覆盖定制
+- AAR 内置 baseline profile：AGP 8+ 的宿主构建自动合并，Profileinstaller 经 Compose 传递已在宿主类路径上，安装或首启即完成 AOT 编译，三个入口的首开速度都受益
 - TalkBack 可感知选中状态，返回箭头 RTL 自动镜像
 - 结果经 Activity Result 回传，不接管持久化
 

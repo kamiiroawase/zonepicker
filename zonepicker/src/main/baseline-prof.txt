@@ -1,0 +1,12 @@
+# Baseline profile for the zonepicker library.
+#
+# A library-wide rule rather than a generated, method-precise profile: the whole library is
+# small enough that over-inclusion costs nothing meaningful at install time, and the rule
+# cannot drift stale as the implementation evolves (a generated profile is a snapshot that
+# silently stops covering new code until regenerated). AGP 8+ merges this file out of the
+# AAR into the consuming app's compiled profile, and androidx.profileinstaller — already on
+# the consumer's classpath through Compose — AOT-compiles it at install or first launch.
+# The pickers are one-shot surfaces, so first-open speed is the speed that matters: this
+# covers the first frame of every entry (activity page, dialog, bottom sheet), the
+# background zone-list build, and the per-keystroke search filter.
+HSPLio/github/kamiiroawase/zonepicker/**->**(**)**
