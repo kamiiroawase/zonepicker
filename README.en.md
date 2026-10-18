@@ -4,13 +4,16 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.kamiiroawase/zonepicker.svg)](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE)
 
-An Android time zone picker library: **one Activity completes the pick** — a curated grouped list of common zones, full search and a "follow system" option, built with Jetpack Compose, Material styling, automatic dark-mode and edge-to-edge adaptation. Compose hosts can alternatively embed the same picker with **`ZonePickerDialog` / `ZonePickerBottomSheet`** — a dialog or bottom sheet straight inside their own UI.
+An Android time zone picker library: a curated grouped list, full search and a "follow system" option, shared by three entries:
 
-[中文版](README.md)
+- **`ZonePickerContract`** — the type-safe Activity entry; results distinguish selected / follow-system / canceled
+- **`ZonePickerDialog` / `ZonePickerBottomSheet`** — Compose entries embedding the same picker as a dialog or bottom sheet, no Activity or result wiring
 
-## Usage
+Built with Jetpack Compose, Material styling, automatic dark-mode and edge-to-edge adaptation. The accent takes light / dark pairs, and the bands and the checkmark color independently. The UI ships English (default) plus Simplified/Traditional Chinese, Japanese and Korean; zone display names come from ICU in the running language.
 
-Published on [Maven Central](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker); versions follow `v*` git tags. An Android library (minSdk 26, no desugaring); `mavenCentral()` is the default repository in Android Studio templates — no extra setup. The UI is rendered with Jetpack Compose and its dependencies flow in through Gradle, so hosts integrate it with or without Compose of their own. As of 3.0 the UI is fully Compose: the public API is unchanged and the AppCompat dependency is gone.
+[中文版](README.md) · [API docs](https://kamiiroawase.github.io/zonepicker/) · [Releases](https://github.com/kamiiroawase/zonepicker/releases)
+
+## Installation
 
 ```kotlin
 dependencies {
@@ -18,7 +21,9 @@ dependencies {
 }
 ```
 
-The type-safe `ZonePickerContract` launch is recommended — results distinguish selected / follow-system / canceled:
+Published on [Maven Central](https://central.sonatype.com/artifact/io.github.kamiiroawase/zonepicker); versions follow `v*` git tags. minSdk 26, no desugaring; `mavenCentral()` is the default repository in Android Studio templates. Compose dependencies flow in through Gradle, so hosts integrate it with or without Compose of their own. As of 3.0 the UI is fully Compose with no AppCompat dependency; the public API stayed compatible.
+
+## Quick start
 
 ```kotlin
 private val pickerLauncher =
@@ -32,26 +37,55 @@ private val pickerLauncher =
 
 pickerLauncher.launch(
     ZonePickerRequest(
-        selectedZoneId = currentZoneId,              // checkmark on the current item; null means follow-system
-        accentColor = Color.parseColor("#3F51B5"),     // optional, default #F05E1C; paints the header and bottom bands, marks derive from it
-        accentColorDark = Color.parseColor("#3949AB"), // optional; replaces accentColor in night mode (null shares one color)
-        markColorDark = Color.parseColor("#9FA8DA"),   // optional; the night checkmark and cursor, colored apart from the bands (see below)
-        title = "Choose time zone",                  // optional; the built-in default is used when omitted
-        locale = inAppLocale,                        // optional; the in-app language — strings, zone names and RTL follow it
-        defaultZoneIds = marketZones,                // optional; a custom default list (e.g. the app's key markets)
+        selectedZoneId = currentZoneId,   // null means follow-system
+        title = "Choose time zone",       // optional; the built-in default is used when omitted
+        locale = inAppLocale,             // optional; the in-app language (see "Language")
+        defaultZoneIds = marketZones,     // optional; a custom default list (see "Default list")
     )
 )
 ```
 
-Without `locale` the picker follows the system language (and the system per-app locale from API 33+); an in-app language switcher has no system channel to read on API 26-32, so pass it explicitly as above. The Compose entries (dialog / bottom sheet) render inside the host's UI and inherit its language on their own — no parameter needed.
+## Parameters
 
-The default list orders itself circularly from the device's own time zone (its offset group leads); passing `defaultZoneIds` swaps in the host's curated zones (legacy alias IDs in the list, `US/Pacific` or `PRC`, map onto their display entries the way a passed-in selection does), with every GMT offset the list leaves uncovered still getting one representative zone. The two Compose entries take the same-named parameter.
+Every parameter defaults sensibly; `ZonePicker.createIntent(...)` takes the same names with the same meanings.
 
-A single `accentColor` adapts to both modes: the header title and back arrow pick black/white from the color's own luminance, and the selection mark and search cursor fall back to the row text color whenever contrast against the current mode's surface runs short. Accents that differ per mode (black in light, say, while dark mode needs a color that lifts off the dark page) pass `accentColorDark`: it replaces `accentColor` whenever the picker renders in night mode — a system day/night switch while the full-screen picker is open included, since the recreated activity re-resolves against the new mode; null shares `accentColor` across both. The Compose entries paint no band — their `accentColor` colors only the mark and cursor, and the host passes the current composition's value.
+| Parameter | Effect | Default |
+|---|---|---|
+| `selectedZoneId` | the zone ID checkmarked; a legacy alias passed in (`US/Pacific`, `PRC`, …) maps onto the row the list actually shows | `null` = follow-system |
+| `accentColor` | the header band (status-bar area included) and the bottom navigation-bar band; the title and back arrow pick black/white from its luminance | resource `zpPrimaryColor` (#F05E1C) |
+| `accentColorDark` | replaces the bands in night mode — including a system day/night switch made while the full-screen picker is open (the recreated activity re-resolves) | `null` = both modes share `accentColor` |
+| `markColor` | the checkmark and search cursor; `null` derives from the accent, an explicit value applies as-is — see "Color rules" | `null` = derived |
+| `markColorDark` | replaces `markColor` in night mode | `null` = both modes share `markColor` |
+| `title` | the page title | resource `zp_title` |
+| `locale` | an explicit UI language (BCP-47): strings, zone display names and RTL follow it — see "Language" | `null` = system language |
+| `defaultZoneIds` | a custom default list — see "Default list" | `null` = 27 built-in curated zones |
 
-Pass `markColor` (with its `markColorDark` twin) when the checkmark needs a color of its own apart from the bands: the explicit value rides the same contrast gate (below 3:1 against the current mode's surface it falls back to the row text color; alpha forced opaque) and repaints only the mark and cursor, never the bands — a subtle bar on the dark page under a bright checkmark is exactly this shape. The Compose entries take no separate parameter.
+### Color rules
 
-When cancel and follow-system need no distinguishing, the basic form suffices:
+A single band color adapts to both modes; accents that differ per mode (black in light, say, while dark mode needs a color that lifts off the dark page) pass `accentColorDark`:
+
+```kotlin
+accentColor = Color.parseColor("#3F51B5"),     // light-mode bands
+accentColorDark = Color.parseColor("#5C6BC0"), // night bands (a lighter indigo lifts off the dark page)
+markColorDark = Color.parseColor("#9FA8DA"),   // the night checkmark and cursor, colored apart from the bands
+```
+
+The checkmark and search-cursor color falls into two cases:
+
+- **No `markColor` (the default)**: derived from the accent — the accent itself while it clears 3:1 against the current mode's surface, the row text color otherwise (#333333 light, #E0E0E0 dark). An amber (#FFD54F, ~1.5:1) or white accent in light mode therefore renders the dark-gray fallback checkmark; black in dark mode falls back to the light gray. The fallback is the guardrail: a derived mark always stays readable. The night derivation tracks `accentColorDark` when passed.
+- **`markColor` passed (with its `markColorDark` twin)**: honored as handed in — no contrast gate, alpha forced opaque — repainting only the mark and cursor, never the bands. A low-contrast explicit pick (white on the light surface, say) is the host's own call.
+
+### Language
+
+Without `locale` the picker follows the system language (and the system per-app locale from API 33+); an in-app language switcher has no system channel to read on API 26-32, so pass it explicitly. The Compose entries render inside the host's UI and inherit its language on their own — no parameter.
+
+### Default list
+
+The default list orders itself circularly from the device's own time zone (its offset group leads; a GMT+8 device starts at UTC+8) and ships 27 curated zones covering every GMT offset, with "follow system" pinned to the top. Passing `defaultZoneIds` swaps in the host's curated zones (legacy alias IDs in the list map onto their display entries the way a passed-in selection does), with every GMT offset the list leaves uncovered still getting one representative zone. The two Compose entries take the same-named parameter.
+
+## Basic form
+
+When cancel and follow-system need no distinguishing, plain intents suffice:
 
 ```kotlin
 private val pickerLauncher =
@@ -65,16 +99,15 @@ private val pickerLauncher =
 pickerLauncher.launch(
     ZonePicker.createIntent(
         context = this,
-        selectedZoneId = currentZoneId,              // null means follow-system
-        accentColor = Color.parseColor("#3F51B5"),   // optional, default #F05E1C; paints the header and bottom bands, marks derive from it
-        title = "Choose time zone"                   // optional; the built-in default is used when omitted
+        selectedZoneId = currentZoneId,   // null means follow-system
+        title = "Choose time zone",
     )
 )
 ```
 
-### Compose entries: dialog and bottom sheet
+`ZonePicker.createIntent` takes the parameters from the table above; outside the contract, the `EXTRA_*` constants assemble intents by hand.
 
-Hosts already using Compose can skip the Activity launch and drop the same picker straight into their own composition (as of 3.1.0). The list, search and follow-system option are identical to the full-screen entry; results reuse `ZonePickerResult` and only ever deliver selected / follow-system — cancellation never arrives through `onResult`, it is expressed by `onDismissRequest` alone. The caller owns visibility; close in both callbacks:
+## Compose entries: dialog and bottom sheet
 
 ```kotlin
 var showDialog by rememberSaveable { mutableStateOf(false) }
@@ -91,28 +124,43 @@ if (showDialog) {
         },
         onDismissRequest = { showDialog = false },
         selectedZoneId = currentZoneId,            // null means follow-system
-        accentColor = Color(0xFF3F51B5),           // optional, default #F05E1C; selection mark and search cursor
-        title = "Choose time zone",                // optional; the built-in default is used when omitted
+        accentColor = Color(0xFF3F51B5),           // the mark and cursor color (see below)
+        title = "Choose time zone",
+        defaultZoneIds = marketZones,              // optional, same meaning as the table
     )
 }
 ```
 
 `ZonePickerBottomSheet(...)` takes the same parameters and renders as a Material bottom sheet; a tap first plays the sheet's hide animation and only then fires `onResult`.
 
-Highlights:
+Notes:
 
-- The UI renders with Jetpack Compose; hosts need no Compose setup of their own
-- Beyond the full-screen Activity, `ZonePickerDialog` / `ZonePickerBottomSheet` compose entries embed the picker into any Compose hierarchy — no Activity result wiring
-- English (default) plus Simplified/Traditional Chinese, Japanese and Korean UI built in, picked by the system or in-app language; zone display names come from ICU in the same language, other languages fall back to English chrome with zone names still in the system language
-- The list ships 27 curated zones covering every GMT offset, circularly ordered from the device's own offset group (a GMT+8 device starts at UTC+8); a host-supplied `defaultZoneIds` list replaces the curated picks while uncovered offsets still get a representative zone; "follow system" pinned to the top, the selected item checkmarked
+- The list, search and follow-system option are identical to the full-screen entry; results reuse `ZonePickerResult` and only ever deliver selected / follow-system — cancellation never arrives through `onResult`, it is expressed by `onDismissRequest` alone. The caller owns visibility; close in both callbacks
+- No Activity means no bands: `accentColor` colors the mark and cursor — explicit values apply as-is, the omitted default resolves to the library orange and rides the derivation rule above
+- No `locale` (the entries render in the host's window and follow its language) and no `*Dark` parameters (the host passes the current mode's value per composition)
+
+## Highlights
+
 - Full instant search over display names / zone IDs / GMT offsets (`gmt+8`, `utc-5` both work) / country names in Chinese and English (searching "中国" surfaces the mainland, Hong Kong, Macau, Taiwan and Singapore zones) / common Chinese city names (上海, 纽约, 東京 — simplified or traditional)
 - All legacy aliases pruned per the IANA `backward` list (`US/Pacific`, `Japan`, …); a legacy alias passed in maps automatically onto its display entry
 - Automatic dark-mode and edge-to-edge adaptation (status bar / navigation bar / keyboard), independent of the host's targetSdk; content caps its width and centers on tablets and landscape
-- The accent runs through the header band and the bottom navigation-bar area; titles and icons pair black/white by the accent's luminance, and the selection mark and search cursor fall back to the row text color when contrast runs short
-- The light/dark palettes and the `zp_*` strings are overridable via same-name resources
+- Under dark mode the chrome, accent and mark colors each switch to their night values; a day/night switch made while the full-screen picker is open re-resolves on the spot
 - Ships a baseline profile inside the AAR — AGP 8+ merges it into the consuming build, Profileinstaller (already on the classpath through Compose) AOT-compiles it at install or first launch, and every entry's first open benefits
-- TalkBack announces the selected state; the back arrow mirrors automatically under RTL
+- TalkBack announces the selected, loading and no-result states; the back arrow mirrors automatically under RTL
 - The result returns via Activity Result; persistence stays with the host
+
+## Resource overrides
+
+Hosts can override every color and string through same-name resources. Colors exist in `values/` and `values-night/` pairs, applying per mode:
+
+| Resource | Effect |
+|---|---|
+| `zpPrimaryColor` / `zpOnAccent` | the default accent / the title and back arrow over it (used by the resource-default path only) |
+| `zpBackground` / `zpSurface` | page background / cards and row surfaces |
+| `zpTextStrong` / `zpTextPrimary` / `zpTextSecondary` / `zpTextHint` | input text / primary row text / secondary row text and group headers / search hint |
+| `zpDivider` | row dividers |
+
+Strings `zp_title` … `zp_back` (eight); `zp_taipei_name` / `zp_hong_kong_name` / `zp_macau_name` are the greater-China display-name overrides, valued only in Chinese buckets — keep them **empty** elsewhere (ICU supplies the names).
 
 ## Known limitations
 
@@ -131,7 +179,13 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # the data-logic unit tests
 ```
 
-57 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting, Android Lint and the public-API golden check (see below). The API reference publishes to GitHub Pages from CI: <https://kamiiroawase.github.io/zonepicker/>. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
+57 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting, Android Lint and the public-API golden check (see below). The API reference publishes to GitHub Pages from CI: <https://kamiiroawase.github.io/zonepicker/>.
+
+The demo lives in the `app` module: all three entries, with the four color channels (light / dark × band / mark) pickable per group (`./gradlew :app:installDebug`).
+
+### Releasing
+
+Pushing a `v*` git tag triggers the Release workflow: after the full build gate passes, the library artifacts (aar / pom / sources / javadoc) are signed, published to Maven Central and auto-released; a **signed demo APK** (`zonepicker-demo-<tag>.apk`) is built and attached to the matching GitHub Release. The README version coordinates must match the tag — the release gate verifies.
 
 ### The public-API golden check
 
@@ -143,7 +197,7 @@ Zone display names need no translation — they localize through ICU in whatever
 
 1. Copy `zonepicker/src/main/res/values/strings.xml` to `zonepicker/src/main/res/values-<locale>/strings.xml` (e.g. `values-ja`).
 2. Translate the eight UI strings (`zp_title` … `zp_back`).
-3. Leave `zp_taipei_name`, `zp_hong_kong_name` and `zp_macau_name` **empty** — they are the greater-China display-name overrides, meaningful only in Chinese variants; ICU supplies the names in every other language.
+3. Leave `zp_taipei_name`, `zp_hong_kong_name` and `zp_macau_name` **empty** — they are the greater-China display-name overrides, meaningful only in Chinese variants.
 4. Run `./gradlew build`. Android Lint fails on a bucket missing keys (`MissingTranslation`), so a partial file cannot slip through.
 
 ### Adding a city or country search alias
