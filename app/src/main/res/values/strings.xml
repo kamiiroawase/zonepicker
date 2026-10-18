@@ -1,5 +1,5 @@
 <resources>
-    <string name="demo_app_name">ZonePicker Demo</string>
+    <string name="demo_app_name">ZonePicker</string>
     <string name="demo_pick">选择时区（全屏）</string>
     <string name="demo_pick_dialog">对话框</string>
     <string name="demo_pick_sheet">底部弹层</string>
