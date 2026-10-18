@@ -1,6 +1,8 @@
 package io.github.kamiiroawase.zonepicker
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +16,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
+import java.util.Locale
 import androidx.compose.ui.graphics.Color as ComposeColor
 
 class ZonePickerActivity : ComponentActivity() {
@@ -33,6 +36,33 @@ class ZonePickerActivity : ComponentActivity() {
     private var scrollSelectionInitially = false
 
     private val viewModel by lazy { ViewModelProvider(this)[ZonePickerViewModel::class.java] }
+
+    /** An explicit locale — an in-app language switcher's choice, API 26-32 included, where
+     *  no platform per-app locale exists for the picker to pick up — wraps the base context,
+     *  so every resource the picker resolves follows it: strings, zone display names, layout
+     *  direction. Without one the context keeps the system locale (and the platform per-app
+     *  locale from API 33). The intent is attached before this runs, so reading it here is
+     *  safe. */
+    override fun attachBaseContext(base: Context) {
+        val locale =
+            intent
+                ?.getStringExtra(ZonePicker.EXTRA_LOCALE)
+                ?.takeIf { it.isNotEmpty() }
+                ?.let(Locale::forLanguageTag)
+
+        val wrapped =
+            if (locale == null) {
+                base
+            } else {
+                val configuration = Configuration(base.resources.configuration)
+
+                configuration.setLocale(locale)
+
+                base.createConfigurationContext(configuration)
+            }
+
+        super.attachBaseContext(wrapped)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

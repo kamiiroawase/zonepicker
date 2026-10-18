@@ -1,7 +1,6 @@
 package io.github.kamiiroawase.zonepicker
 
 import android.content.Context
-import android.content.res.Configuration
 import androidx.compose.ui.unit.LayoutDirection
 import java.util.Locale
 
@@ -30,34 +29,23 @@ internal object PickerLocale {
         }
     }
 
-    /** Zone display-name inputs for the picker's own UI language, resolved against [context].
-     *  Per-app locales (API 33+ framework LocaleManager) are applied to an activity's
-     *  context, never to the application context, so callers pass their UI context. */
+    /** Zone display-name inputs for the picker's own UI language, resolved against [context]:
+     *  display names follow the UI locale exactly — ICU renders them in whatever language the
+     *  picker resolved to, with Android's resource fallback (a French system shows English
+     *  chrome, but its zone names still come out French, which keeps the main content in the
+     *  user's language). The three greater-China overrides apply only where their strings are
+     *  non-empty: the Chinese buckets carry the library's chosen names, every other locale
+     *  keeps ICU's own. Per-app locales (API 33+ framework LocaleManager) are applied to an
+     *  activity's context, never to the application context, so callers pass their UI
+     *  context — or the locale-wrapped base context the activity entry builds for an
+     *  explicit [ZonePicker.EXTRA_LOCALE]. */
     fun zoneNames(context: Context): ZonePickerViewModel.ZoneNames = ZonePickerViewModel.ZoneNames(
-        nameLocale = nameLocale(context),
+        nameLocale = context.resources.configuration.locales[0],
         overrides =
-        mapOf(
+        sequenceOf(
             "Asia/Taipei" to context.getString(R.string.zp_taipei_name),
             "Asia/Hong_Kong" to context.getString(R.string.zp_hong_kong_name),
             "Asia/Macau" to context.getString(R.string.zp_macau_name),
-        ),
+        ).filter { it.second.isNotEmpty() }.toMap(),
     )
-
-    /** Chinese while the picker's own strings are the untranslated defaults; otherwise the
-     *  context's locale, which reflects both the system and any per-app locale the platform
-     *  applies there. The baseline resolves the title under Locale.ROOT — the default
-     *  values/ bucket, which not even a host overriding values-zh can shift — so only a real
-     *  localization (values-<locale> resources or a per-app locale) flips the decision. */
-    private fun nameLocale(context: Context): Locale {
-        val appContext = context.applicationContext
-
-        val defaults =
-            Configuration(appContext.resources.configuration).apply { setLocale(Locale.ROOT) }
-
-        return if (appContext.createConfigurationContext(defaults).getString(R.string.zp_title) == context.getString(R.string.zp_title)) {
-            Locale.SIMPLIFIED_CHINESE
-        } else {
-            context.resources.configuration.locales[0]
-        }
-    }
 }

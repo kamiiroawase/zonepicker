@@ -1,13 +1,17 @@
 <resources>
-    <string name="zp_title">时区</string>
-    <string name="zp_follow_system">跟随系统</string>
-    <string name="zp_search_hint">搜索时区、城市或国家</string>
-    <string name="zp_no_result">无匹配时区</string>
-    <string name="zp_loading">正在加载</string>
-    <string name="zp_clear_search">清空搜索</string>
-    <string name="zp_selected">已选择</string>
-    <string name="zp_back">返回</string>
-    <string name="zp_taipei_name">中国台北时间</string>
-    <string name="zp_hong_kong_name">中国香港时间</string>
-    <string name="zp_macau_name">中国澳门时间</string>
+    <!-- The default bucket is English; values-zh / values-zh-rTW / values-zh-rHK carry the
+         Chinese translations. Host apps override any of these with same-name resources. -->
+    <string name="zp_title">Time Zone</string>
+    <string name="zp_follow_system">Follow system</string>
+    <string name="zp_search_hint">Search time zones, cities or countries</string>
+    <string name="zp_no_result">No matching time zone</string>
+    <string name="zp_loading">Loading</string>
+    <string name="zp_clear_search">Clear search</string>
+    <string name="zp_selected">Selected</string>
+    <string name="zp_back">Back</string>
+    <!-- Empty by default: outside the Chinese buckets ICU supplies the display names, and
+         the library's greater-China naming choices must not leak into other languages -->
+    <string name="zp_taipei_name"></string>
+    <string name="zp_hong_kong_name"></string>
+    <string name="zp_macau_name"></string>
 </resources>

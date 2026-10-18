@@ -1,0 +1,13 @@
+<resources>
+    <string name="zp_title">時區</string>
+    <string name="zp_follow_system">跟隨系統</string>
+    <string name="zp_search_hint">搜尋時區、城市或國家</string>
+    <string name="zp_no_result">沒有符合的時區</string>
+    <string name="zp_loading">正在載入</string>
+    <string name="zp_clear_search">清除搜尋</string>
+    <string name="zp_selected">已選取</string>
+    <string name="zp_back">返回</string>
+    <string name="zp_taipei_name">台北標準時間</string>
+    <string name="zp_hong_kong_name">香港標準時間</string>
+    <string name="zp_macau_name">澳門標準時間</string>
+</resources>

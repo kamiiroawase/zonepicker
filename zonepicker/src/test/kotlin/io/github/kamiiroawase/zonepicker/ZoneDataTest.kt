@@ -503,6 +503,34 @@ class ZoneDataTest {
         assertTrue(default.any { it.zoneId == "Asia/Macau" })
     }
 
+    @Test
+    fun `city search resolves chinese city names in both scripts`() {
+        assertEquals(setOf("Asia/Shanghai"), ZoneData.cityZoneIds("上海"))
+        assertEquals(setOf("Asia/Tokyo"), ZoneData.cityZoneIds("东京"))
+        assertEquals(setOf("Asia/Tokyo"), ZoneData.cityZoneIds("東京"))
+
+        assertTrue(ZoneData.cityZoneIds("纽约").contains("America/New_York"))
+        assertTrue(ZoneData.cityZoneIds("雪梨").contains("Australia/Sydney"))
+        assertTrue(ZoneData.cityZoneIds("檀香山").contains("Pacific/Honolulu"))
+    }
+
+    @Test
+    fun `city search ignores empty and unmatched queries`() {
+        assertTrue(ZoneData.cityZoneIds("").isEmpty())
+        assertTrue(ZoneData.cityZoneIds("  ").isEmpty())
+        assertTrue(ZoneData.cityZoneIds("阿凡提").isEmpty())
+    }
+
+    @Test
+    fun `city search joins the filter through extra zone ids`() {
+        // Neither the display name nor the zone ID contains the Chinese spelling — only the
+        // city-alias extra ids can surface the zone
+        val tokyo = ZoneData.Zone("Asia/Tokyo", "日本标准时间", 9 * 3600)
+
+        assertTrue(ZoneData.filter(listOf(tokyo), "东京", ZoneData.cityZoneIds("东京")).isNotEmpty())
+        assertTrue(ZoneData.filter(listOf(tokyo), "東京", ZoneData.cityZoneIds("東京")).isNotEmpty())
+    }
+
     /** The production entry point is bulk [ZoneData.filter]; single-zone assertions go through
      *  the same path so the tests exercise what the picker actually runs. */
     private fun matches(zone: ZoneData.Zone, query: String): Boolean = ZoneData.filter(listOf(zone), query).isNotEmpty()

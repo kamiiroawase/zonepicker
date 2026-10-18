@@ -123,13 +123,19 @@ internal fun ColumnScope.ZonePickerBody(
 
     val trimmedQuery = renderedQuery.trim()
 
-    // Default shows popular zones covering all offsets; search matches against all zones
+    // Default shows popular zones covering all offsets; search matches against all zones,
+    // with country-name and Chinese city-name queries widening the match by zone ID
     val rows =
         remember(snapshot, trimmedQuery) {
             when {
                 snapshot == null -> emptyList()
+
                 trimmedQuery.isEmpty() -> buildRows(snapshot.defaultZones, selectedZoneId)
-                else -> buildRows(ZoneData.filter(snapshot.zones, trimmedQuery, ZoneData.countryZoneIds(trimmedQuery)), selectedZoneId)
+
+                else -> buildRows(
+                    ZoneData.filter(snapshot.zones, trimmedQuery, ZoneData.countryZoneIds(trimmedQuery) + ZoneData.cityZoneIds(trimmedQuery)),
+                    selectedZoneId,
+                )
             }
         }
 

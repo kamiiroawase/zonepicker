@@ -527,6 +527,22 @@ internal object ZoneData {
             .toSet()
     }
 
+    /** Returns the zone a Chinese city-name query points at, simplified or traditional. The
+     *  zone IDs embed English city names, so English city queries already match by ID text;
+     *  only the Chinese spellings need this table. CJK keyword matching applies: a query
+     *  matches an alias when they overlap as substrings either way, so 上海市 finds 上海 and
+     *  a single 東 finds both 東京 and 台北. */
+    fun cityZoneIds(query: String): Set<String> {
+        val trimmed = query.trim()
+
+        if (trimmed.isEmpty()) return emptySet()
+
+        return CITY_ZONE_ALIASES
+            .filter { (aliases, _) -> aliases.any { keywordMatches(trimmed, it) } }
+            .flatMap { it.zoneIds }
+            .toSet()
+    }
+
     /**
      * CJK keywords have no word boundaries, so plain substring matching either way is right.
      * Latin keywords match query tokens that equal a keyword token, or prefix one by at
@@ -675,6 +691,72 @@ internal object ZoneData {
                 ),
             ),
             CountryZones(listOf("新西兰", "new zealand"), listOf("Pacific/Auckland", "Pacific/Chatham")),
+        )
+
+    /** Chinese city names (both scripts) → their zones, for city search; single zones, unlike
+     *  the country groups above. Covers the default list's cities plus major Chinese ones —
+     *  an unlisted city still finds its zone by English name or zone ID. */
+    private val CITY_ZONE_ALIASES =
+        listOf(
+            CountryZones(
+                listOf("上海", "北京", "广州", "深圳", "成都", "重庆", "杭州", "南京", "武汉", "西安"),
+                listOf("Asia/Shanghai"),
+            ),
+            CountryZones(listOf("乌鲁木齐", "烏魯木齊"), listOf("Asia/Urumqi")),
+            CountryZones(listOf("台北", "臺北"), listOf("Asia/Taipei")),
+            CountryZones(listOf("东京", "東京"), listOf("Asia/Tokyo")),
+            CountryZones(listOf("首尔", "首爾"), listOf("Asia/Seoul")),
+            CountryZones(listOf("新德里", "孟买", "孟買", "加尔各答", "加爾各答"), listOf("Asia/Kolkata")),
+            CountryZones(listOf("曼谷"), listOf("Asia/Bangkok")),
+            CountryZones(listOf("胡志明市", "西贡", "西貢"), listOf("Asia/Ho_Chi_Minh")),
+            CountryZones(listOf("雅加达", "雅加達"), listOf("Asia/Jakarta")),
+            CountryZones(listOf("马尼拉", "馬尼拉"), listOf("Asia/Manila")),
+            CountryZones(listOf("仰光"), listOf("Asia/Yangon")),
+            CountryZones(listOf("卡拉奇", "喀拉蚩"), listOf("Asia/Karachi")),
+            CountryZones(listOf("达卡", "達卡"), listOf("Asia/Dhaka")),
+            CountryZones(listOf("加德满都", "加德滿都"), listOf("Asia/Kathmandu")),
+            CountryZones(listOf("德黑兰", "德黑蘭"), listOf("Asia/Tehran")),
+            CountryZones(listOf("利雅得", "利雅德"), listOf("Asia/Riyadh")),
+            CountryZones(listOf("莫斯科"), listOf("Europe/Moscow")),
+            CountryZones(listOf("伦敦", "倫敦"), listOf("Europe/London")),
+            CountryZones(listOf("巴黎"), listOf("Europe/Paris")),
+            CountryZones(listOf("柏林"), listOf("Europe/Berlin")),
+            CountryZones(listOf("罗马", "羅馬"), listOf("Europe/Rome")),
+            CountryZones(listOf("马德里", "馬德里"), listOf("Europe/Madrid")),
+            CountryZones(listOf("阿姆斯特丹"), listOf("Europe/Amsterdam")),
+            CountryZones(listOf("维也纳", "維也納"), listOf("Europe/Vienna")),
+            CountryZones(listOf("苏黎世", "蘇黎世"), listOf("Europe/Zurich")),
+            CountryZones(listOf("斯德哥尔摩", "斯德哥爾摩"), listOf("Europe/Stockholm")),
+            CountryZones(listOf("奥斯陆", "奧斯陸"), listOf("Europe/Oslo")),
+            CountryZones(listOf("哥本哈根"), listOf("Europe/Copenhagen")),
+            CountryZones(listOf("都柏林"), listOf("Europe/Dublin")),
+            CountryZones(listOf("里斯本"), listOf("Europe/Lisbon")),
+            CountryZones(listOf("雅典"), listOf("Europe/Athens")),
+            CountryZones(listOf("伊斯坦布尔", "伊斯坦堡"), listOf("Europe/Istanbul")),
+            CountryZones(listOf("基辅", "基輔"), listOf("Europe/Kyiv")),
+            CountryZones(listOf("华沙", "華沙"), listOf("Europe/Warsaw")),
+            CountryZones(listOf("纽约", "紐約"), listOf("America/New_York")),
+            CountryZones(listOf("洛杉矶", "洛杉磯"), listOf("America/Los_Angeles")),
+            CountryZones(listOf("旧金山", "舊金山", "三藩市"), listOf("America/Los_Angeles", "America/San_Francisco")),
+            CountryZones(listOf("西雅图", "西雅圖"), listOf("America/Los_Angeles")),
+            CountryZones(listOf("芝加哥"), listOf("America/Chicago")),
+            CountryZones(listOf("丹佛"), listOf("America/Denver")),
+            CountryZones(listOf("凤凰城", "鳳凰城"), listOf("America/Phoenix")),
+            CountryZones(listOf("安克雷奇", "安克拉治"), listOf("America/Anchorage")),
+            CountryZones(listOf("檀香山", "夏威夷"), listOf("Pacific/Honolulu")),
+            CountryZones(listOf("多伦多", "多倫多"), listOf("America/Toronto")),
+            CountryZones(listOf("温哥华", "溫哥華"), listOf("America/Vancouver")),
+            CountryZones(listOf("墨西哥城"), listOf("America/Mexico_City")),
+            CountryZones(listOf("圣保罗", "聖保羅"), listOf("America/Sao_Paulo")),
+            CountryZones(listOf("布宜诺斯艾利斯", "布宜諾斯艾利斯"), listOf("America/Argentina/Buenos_Aires")),
+            CountryZones(listOf("悉尼", "雪梨"), listOf("Australia/Sydney")),
+            CountryZones(listOf("墨尔本", "墨爾本"), listOf("Australia/Melbourne")),
+            CountryZones(listOf("珀斯"), listOf("Australia/Perth")),
+            CountryZones(listOf("奥克兰", "奧克蘭"), listOf("Pacific/Auckland")),
+            CountryZones(listOf("开罗", "開羅"), listOf("Africa/Cairo")),
+            CountryZones(listOf("约翰内斯堡", "約翰內斯堡"), listOf("Africa/Johannesburg")),
+            CountryZones(listOf("拉各斯", "拉各斯"), listOf("Africa/Lagos")),
+            CountryZones(listOf("内罗毕", "內羅畢", "奈洛比"), listOf("Africa/Nairobi")),
         )
 
     /** Popular zones shown by default; search is not limited to them. */

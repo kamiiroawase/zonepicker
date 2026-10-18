@@ -35,9 +35,12 @@ pickerLauncher.launch(
         selectedZoneId = currentZoneId,              // checkmark on the current item; null means follow-system
         accentColor = Color.parseColor("#3F51B5"),   // optional, default #F05E1C; paints the header band, bottom band and selection marks
         title = "Choose time zone",                  // optional; the built-in default is used when omitted
+        locale = inAppLocale,                        // optional; the in-app language — strings, zone names and RTL follow it
     )
 )
 ```
+
+Without `locale` the picker follows the system language (and the system per-app locale from API 33+); an in-app language switcher has no system channel to read on API 26-32, so pass it explicitly as above. The Compose entries (dialog / bottom sheet) render inside the host's UI and inherit its language on their own — no parameter needed.
 
 When cancel and follow-system need no distinguishing, the basic form suffices:
 
@@ -91,8 +94,9 @@ Highlights:
 
 - The UI renders with Jetpack Compose; hosts need no Compose setup of their own
 - Beyond the full-screen Activity, `ZonePickerDialog` / `ZonePickerBottomSheet` compose entries embed the picker into any Compose hierarchy — no Activity result wiring
+- English (default) plus Simplified and Traditional Chinese UI built in, picked by the system or in-app language; zone display names come from ICU in the same language, other languages fall back to English chrome with zone names still in the system language
 - The list ships 27 curated zones covering every GMT offset, UTC+8 first; "follow system" pinned to the top, the selected item checkmarked
-- Full instant search over display names / zone IDs / GMT offsets (`gmt+8`, `utc-5` both work) / country names in Chinese and English (searching "中国" surfaces the mainland, Hong Kong, Macau, Taiwan and Singapore zones)
+- Full instant search over display names / zone IDs / GMT offsets (`gmt+8`, `utc-5` both work) / country names in Chinese and English (searching "中国" surfaces the mainland, Hong Kong, Macau, Taiwan and Singapore zones) / common Chinese city names (上海, 纽约, 東京 — simplified or traditional)
 - All legacy aliases pruned per the IANA `backward` list (`US/Pacific`, `Japan`, …); a legacy alias passed in maps automatically onto its display entry
 - Automatic dark-mode and edge-to-edge adaptation (status bar / navigation bar / keyboard), independent of the host's targetSdk
 - The accent runs through the header band and the bottom navigation-bar area; titles, icons and selection marks pair black/white by contrast
@@ -103,10 +107,10 @@ Highlights:
 
 ## Known limitations
 
-- Chinese city names (e.g. 「上海」) are not searchable yet — use the English city name (`shanghai`) or the country name instead; likewise for countries missing from the country table
-- Display names default to Simplified Chinese. Localizing requires providing both the default `values/` (keeping Chinese) and the target language's `values-<locale>/` — overriding only the default `values/` leaves the zone names Chinese
+- The Chinese city-alias table covers common cities (the default list's cities plus major Chinese ones); for an unlisted Chinese city name use the English name (`shanghai`) or the country name instead — likewise for countries missing from the country table
+- The UI ships English plus Simplified/Traditional Chinese; other languages fall back to the English chrome (zone display names still render in that language via ICU) — override the `zp_*` resources to add more
 - A `selectedZoneId` that still resolves to nothing in the list (e.g. `EST`, `SystemV/*`, or a typo) shows no selection mark
-- On API 26-32 the picker follows the system language; an in-app language override does not apply (system per-app locales apply from API 33+)
+- The Activity entry follows the system language on API 26-32; an in-app language needs the explicit `locale` parameter (the system per-app locale applies automatically from API 33+; the Compose entries always follow the host)
 - On Android 15+, a few system skins draw their own three-button navigation-bar background over the bottom accent band
 
 ## Development
@@ -118,7 +122,7 @@ cd zonepicker
 ./gradlew :zonepicker:testDebugUnitTest    # the data-logic unit tests
 ```
 
-47 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting and Android Lint. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
+50 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting and Android Lint. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
 
 ## License
 
