@@ -17,7 +17,7 @@ Jetpack Compose 渲染、Material 风格，自动适配深色模式与 edge-to-e
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:3.3.0")
+    implementation("io.github.kamiiroawase:zonepicker:3.4.0")
 }
 ```
 

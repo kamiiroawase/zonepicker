@@ -17,7 +17,7 @@ Built with Jetpack Compose, Material styling, automatic dark-mode and edge-to-ed
 
 ```kotlin
 dependencies {
-    implementation("io.github.kamiiroawase:zonepicker:3.3.0")
+    implementation("io.github.kamiiroawase:zonepicker:3.4.0")
 }
 ```
 
