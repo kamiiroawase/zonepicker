@@ -97,7 +97,7 @@ Highlights:
 
 - The UI renders with Jetpack Compose; hosts need no Compose setup of their own
 - Beyond the full-screen Activity, `ZonePickerDialog` / `ZonePickerBottomSheet` compose entries embed the picker into any Compose hierarchy — no Activity result wiring
-- English (default) plus Simplified and Traditional Chinese UI built in, picked by the system or in-app language; zone display names come from ICU in the same language, other languages fall back to English chrome with zone names still in the system language
+- English (default) plus Simplified/Traditional Chinese, Japanese and Korean UI built in, picked by the system or in-app language; zone display names come from ICU in the same language, other languages fall back to English chrome with zone names still in the system language
 - The list ships 27 curated zones covering every GMT offset, circularly ordered from the device's own offset group (a GMT+8 device starts at UTC+8); a host-supplied `defaultZoneIds` list replaces the curated picks while uncovered offsets still get a representative zone; "follow system" pinned to the top, the selected item checkmarked
 - Full instant search over display names / zone IDs / GMT offsets (`gmt+8`, `utc-5` both work) / country names in Chinese and English (searching "中国" surfaces the mainland, Hong Kong, Macau, Taiwan and Singapore zones) / common Chinese city names (上海, 纽约, 東京 — simplified or traditional)
 - All legacy aliases pruned per the IANA `backward` list (`US/Pacific`, `Japan`, …); a legacy alias passed in maps automatically onto its display entry
@@ -111,7 +111,7 @@ Highlights:
 ## Known limitations
 
 - The Chinese city-alias table covers common cities (the default list's cities plus major Chinese ones); for an unlisted Chinese city name use the English name (`shanghai`) or the country name instead — likewise for countries missing from the country table
-- The UI ships English plus Simplified/Traditional Chinese; other languages fall back to the English chrome (zone display names still render in that language via ICU) — override the `zp_*` resources to add more
+- The UI ships English plus Simplified/Traditional Chinese, Japanese and Korean; other languages fall back to the English chrome (zone display names still render in that language via ICU) — override the `zp_*` resources to add more
 - A `selectedZoneId` that still resolves to nothing in the list (e.g. `EST`, `SystemV/*`, or a typo) shows no selection mark
 - The Activity entry follows the system language on API 26-32; an in-app language needs the explicit `locale` parameter (the system per-app locale applies automatically from API 33+; the Compose entries always follow the host)
 - On Android 15+, a few system skins draw their own three-button navigation-bar background over the bottom accent band
@@ -121,11 +121,11 @@ Highlights:
 ```bash
 git clone https://github.com/kamiiroawase/zonepicker.git
 cd zonepicker
-./gradlew build                            # build, tests, lint and Spotless checks
+./gradlew build                            # build, tests, lint, Spotless and the public-API golden check
 ./gradlew :zonepicker:testDebugUnitTest    # the data-logic unit tests
 ```
 
-55 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting and Android Lint. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
+55 unit tests (JUnit, `testDebugUnitTest`) cover zone grouping and legacy-alias mapping, search filtering (country and Chinese city aliases included), anchored ordering, accent colors, locale and layout-direction resolution, and the Activity Result contract. Quality gates hang off `build`: Spotless formatting, Android Lint and the public-API golden check (`api/zonepicker.api` — see [CONTRIBUTING.md](CONTRIBUTING.md)). The API reference publishes to GitHub Pages from CI: <https://kamiiroawase.github.io/zonepicker/>. The demo lives in the `app` module and shows all three entries (`./gradlew :app:installDebug`); pushing a `v*` tag triggers the Release workflow publishing to Maven Central.
 
 ## License
 

@@ -1,0 +1,56 @@
+name: Docs
+
+on:
+  push:
+    branches: [ main ]
+  # Manual trigger: a Dokka upgrade or a KDoc polish can be re-published without an
+  # empty commit landing on main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push replaces the queued one
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+# All actions are pinned by commit SHA (a tag can be re-pointed on the repo side;
+# the trailing comment records the version). Upgrades land through Dependabot PRs
+# that update the SHA, merged after a human reviews the diff — same policy as
+# build.yml. The Pages deployment itself needs the environment below enabled once
+# in the repository settings (Pages → Source: GitHub Actions)
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+          cache-dependency-path: |
+            gradle/libs.versions.toml
+            gradle/wrapper/gradle-wrapper.properties
+            **/*.gradle.kts
+
+      # Same generation the Build workflow uploads as its api-docs artifact: the
+      # library module's KDoc only (the demo app stays out of the docs)
+      - name: Generate API documentation
+        run: ./gradlew :zonepicker:dokkaGeneratePublicationHtml
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: zonepicker/build/dokka/html
+
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -97,7 +97,7 @@ if (showDialog) {
 
 - 界面由 Jetpack Compose 渲染，宿主无需任何 Compose 配置
 - 除全屏 Activity 外提供 `ZonePickerDialog` / `ZonePickerBottomSheet` 两个 Compose 入口，可直接嵌入任意 Compose 界面，无需 Activity 结果接线
-- 内置英文（默认）与简体/繁体中文界面，按系统或应用内语言自动选择；时区显示名经 ICU 以同一语言生成，其他语言回退英文界面而时区名仍随系统语言
+- 内置英文（默认）与简繁中文、日语、韩语界面，按系统或应用内语言自动选择；时区显示名经 ICU 以同一语言生成，其他语言回退英文界面而时区名仍随系统语言
 - 列表默认 27 个常用时区、覆盖全部 GMT 偏移，从设备当前时区所在的偏移组环形排起（中文设备即东八区开头）；可传 `defaultZoneIds` 自定义常用列表，未覆盖的偏移仍自动补代表时区；「跟随系统」置顶，选中项打勾
 - 全量即时搜索：时区显示名 / 时区 ID / GMT 偏移（`gmt+8`、`utc-5` 均可）/ 国家中英文名（搜「中国」可带出大陆、港澳台与新加坡时区）/ 常用城市中文名（上海、纽约、東京，简繁均可）
 - 按 IANA `backward` 剔除全部旧别名（`US/Pacific`、`Japan` 等）；传入旧别名 ID 会自动映射到对应展示项
@@ -111,7 +111,7 @@ if (showDialog) {
 ## 已知限制
 
 - 城市中文别名表只收录常用城市（默认列表的城市与主要中国城市），未收录的中文城市名请用英文城市名（如 `shanghai`）或国家名代替；国家表未收录的国家同理
-- 界面内置英文与简体/繁体中文；其他语言回退英文界面（时区显示名仍按该语言经 ICU 生成），如需更多语言可按需覆盖 `zp_*` 资源
+- 界面内置英文与简繁中文、日语、韩语；其他语言回退英文界面（时区显示名仍按该语言经 ICU 生成），如需更多语言可按需覆盖 `zp_*` 资源
 - 解析后仍不在列表中的 `selectedZoneId`（如 `EST`、`SystemV/*` 或拼写错误）不显示选中标记
 - Activity 入口在 API 26-32 上默认跟随系统语言，应用内语言需显式传入 `locale` 参数（系统级 per-app 语言自 API 33 起自动生效；Compose 入口始终跟随宿主）
 - Android 15+ 上，个别系统的三键导航栏会绘制自己的背景，覆盖底部的强调色带
@@ -121,11 +121,11 @@ if (showDialog) {
 ```bash
 git clone https://github.com/kamiiroawase/zonepicker.git
 cd zonepicker
-./gradlew build                            # 构建、测试、lint 与 Spotless 检查
+./gradlew build                            # 构建、测试、lint、Spotless 与公开 API 金标检查
 ./gradlew :zonepicker:testDebugUnitTest    # 数据逻辑单元测试
 ```
 
-55 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、锚定排序、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式与 Android Lint。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
+55 个单元测试（JUnit，`testDebugUnitTest`）覆盖时区分组与旧别名映射、搜索过滤（含国家与中文城市别名）、锚定排序、强调色与 Activity Result 契约、语言与布局方向解析。质量门禁全挂在 `build` 上：Spotless 格式、Android Lint 与公开 API 金标检查（`api/zonepicker.api`，详见 [CONTRIBUTING.md](CONTRIBUTING.md)）。API 参考由 CI 自动发布到 GitHub Pages：<https://kamiiroawase.github.io/zonepicker/>。演示工程为 `app` 模块（三种入口均有演示，`./gradlew :app:installDebug`）；推送 `v*` tag 触发 Release 工作流发布到 Maven Central。
 
 ## 许可
 

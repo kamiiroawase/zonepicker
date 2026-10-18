@@ -1,5 +1,6 @@
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
+import java.util.zip.ZipFile
 
 plugins {
     alias(libs.plugins.android.library)
@@ -85,6 +86,212 @@ android {
         compose = true
     }
 }
+
+// binary-compatibility-validator registers no tasks under AGP 9's built-in Kotlin (no KGP
+// compilation exists for it to hook), so the API guard is a local equivalent: javap -public
+// over the release AAR's classes dumps the public binary surface, apiCheck — wired into
+// `check`, hence `build` and CI — diffs it against the committed golden api/zonepicker.api
+// and fails on drift, so accidental API breaks surface at PR time instead of in a
+// consumer's build. Swap for the real plugin whenever it learns built-in Kotlin.
+//
+// javap cannot see Kotlin visibility (internal compiles to public bytecode), so the surface
+// lists the library's public types explicitly: everything else in classes.jar is internal
+// by definition. Adding a public type means adding it here and regenerating — a deliberate
+// act, which is the point.
+val publicApiClasses =
+    setOf(
+        "io.github.kamiiroawase.zonepicker.ZonePicker",
+        "io.github.kamiiroawase.zonepicker.ZonePickerActivity",
+        "io.github.kamiiroawase.zonepicker.ZonePickerContract",
+        "io.github.kamiiroawase.zonepicker.ZonePickerDialog",
+        "io.github.kamiiroawase.zonepicker.ZonePickerBottomSheet",
+        "io.github.kamiiroawase.zonepicker.ZonePickerRequest",
+        "io.github.kamiiroawase.zonepicker.ZonePickerResult",
+    )
+
+val releaseAar = layout.buildDirectory.file("outputs/aar/zonepicker-release.aar")
+
+val apiGoldenFile = layout.projectDirectory.file("api/zonepicker.api")
+
+/** Kotlin's default-parameter trampolines, Compose's update skips, stability fields and
+ *  synthetic accessors — generated, not API. (The dollar signs go through character classes —
+ *  the Gradle Kotlin DSL restricts bare ones.) */
+private val generatedMemberPattern = Regex("""[$]default\(|[$]update\(|[$]updateUiState\(|int [$]stable;|access[$]""")
+
+// The javap pipeline below lives inline inside the task actions: script-level helpers would
+// drag the script object into the configuration cache, which rejects it. Both actions
+// capture only local values resolved at configuration time.
+tasks.register("apiDump") {
+    group = "verification"
+    description = "Regenerates api/zonepicker.api from the release AAR."
+    dependsOn("assembleRelease")
+
+    val aarFile = releaseAar
+    val goldenFile = apiGoldenFile
+    val classes = publicApiClasses
+    val noise = generatedMemberPattern
+    inputs.file(aarFile)
+    outputs.file(goldenFile)
+
+    doLast {
+        val classesJar = temporaryDir.resolve("classes.jar")
+
+        temporaryDir.mkdirs()
+        ZipFile(aarFile.get().asFile).use { zip ->
+            zip.getInputStream(zip.getEntry("classes.jar")).use { input -> classesJar.outputStream().use { input.copyTo(it) } }
+        }
+
+        fun isPublicApi(className: String): Boolean =
+            classes.any { listed ->
+                val isSelf = className == listed || className == listed + "Kt"
+                val nested = className.removePrefix(listed + '$')
+
+                isSelf || (nested != className && nested.split('$').all { it.isNotEmpty() && it.first().isUpperCase() })
+            }
+
+        val classNames =
+            ZipFile(classesJar).use { jar ->
+                jar
+                    .entries()
+                    .asSequence()
+                    .filter { it.name.endsWith(".class") }
+                    .map { it.name.removeSuffix(".class").replace('/', '.') }
+                    .filter(::isPublicApi)
+                    .sorted()
+                    .toList()
+            }
+
+        val javap =
+            ProcessBuilder(
+                listOf("javap", "-public", "-classpath", classesJar.absolutePath) + classNames,
+            ).redirectErrorStream(true).start()
+
+        val output = javap.inputStream.bufferedReader().use { it.readText() }
+
+        check(javap.waitFor() == 0) { "javap failed:\n$output" }
+
+        val surface = StringBuilder()
+        var keepingClass = false
+
+        for (rawLine in output.lineSequence()) {
+            val line = rawLine.trimEnd()
+
+            when {
+                line.isEmpty() || line.startsWith("Compiled from") -> {
+                    Unit
+                }
+
+                line.endsWith("{") -> {
+                    keepingClass = line.startsWith("public ")
+
+                    if (keepingClass) surface.appendLine(line)
+                }
+
+                line == "}" -> {
+                    if (keepingClass) surface.appendLine(line)
+
+                    keepingClass = false
+                }
+
+                keepingClass && !noise.containsMatchIn(line) -> {
+                    surface.appendLine(line)
+                }
+            }
+        }
+
+        goldenFile.asFile.writeText(surface.toString())
+    }
+}
+
+tasks.register("apiCheck") {
+    group = "verification"
+    description = "Fails when the public API drifted from api/zonepicker.api."
+    dependsOn("assembleRelease")
+
+    val aarFile = releaseAar
+    val goldenFile = apiGoldenFile
+    val classes = publicApiClasses
+    val noise = generatedMemberPattern
+    inputs.file(aarFile)
+    inputs.file(goldenFile)
+
+    doLast {
+        val classesJar = temporaryDir.resolve("classes.jar")
+
+        temporaryDir.mkdirs()
+        ZipFile(aarFile.get().asFile).use { zip ->
+            zip.getInputStream(zip.getEntry("classes.jar")).use { input -> classesJar.outputStream().use { input.copyTo(it) } }
+        }
+
+        fun isPublicApi(className: String): Boolean =
+            classes.any { listed ->
+                val isSelf = className == listed || className == listed + "Kt"
+                val nested = className.removePrefix(listed + '$')
+
+                isSelf || (nested != className && nested.split('$').all { it.isNotEmpty() && it.first().isUpperCase() })
+            }
+
+        val classNames =
+            ZipFile(classesJar).use { jar ->
+                jar
+                    .entries()
+                    .asSequence()
+                    .filter { it.name.endsWith(".class") }
+                    .map { it.name.removeSuffix(".class").replace('/', '.') }
+                    .filter(::isPublicApi)
+                    .sorted()
+                    .toList()
+            }
+
+        val javap =
+            ProcessBuilder(
+                listOf("javap", "-public", "-classpath", classesJar.absolutePath) + classNames,
+            ).redirectErrorStream(true).start()
+
+        val output = javap.inputStream.bufferedReader().use { it.readText() }
+
+        check(javap.waitFor() == 0) { "javap failed:\n$output" }
+
+        val surface = StringBuilder()
+        var keepingClass = false
+
+        for (rawLine in output.lineSequence()) {
+            val line = rawLine.trimEnd()
+
+            when {
+                line.isEmpty() || line.startsWith("Compiled from") -> {
+                    Unit
+                }
+
+                line.endsWith("{") -> {
+                    keepingClass = line.startsWith("public ")
+
+                    if (keepingClass) surface.appendLine(line)
+                }
+
+                line == "}" -> {
+                    if (keepingClass) surface.appendLine(line)
+
+                    keepingClass = false
+                }
+
+                keepingClass && !noise.containsMatchIn(line) -> {
+                    surface.appendLine(line)
+                }
+            }
+        }
+
+        val expected = goldenFile.asFile.readText()
+
+        check(surface.toString() == expected) {
+            "The public API drifted from ${goldenFile.asFile.name}; run ./gradlew :zonepicker:apiDump, review the diff and commit it (or change the code)"
+        }
+    }
+}
+
+// The same wiring the validator plugin would install: every `check` — and therefore `build`
+// and CI — verifies the golden file against the current surface
+tasks.named("check") { dependsOn(tasks.named("apiCheck")) }
 
 dependencies {
     // api, not implementation: ZonePickerContract's signature exposes ActivityResultContract
