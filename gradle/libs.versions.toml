@@ -1,6 +1,6 @@
 [versions]
 activity = "1.13.0"
-agp = "9.4.1"
+agp = "9.5.0"
 androidx-core-ktx = "1.19.1"
 androidx-lifecycle = "2.11.0"
 composeBom = "2026.09.00"
