@@ -2,7 +2,7 @@
 activity = "1.13.0"
 agp = "9.5.3"
 androidx-core-ktx = "1.19.1"
-androidx-lifecycle = "2.11.0"
+androidx-lifecycle = "2.11.1"
 composeBom = "2026.11.01"
 coroutines = "1.11.0"
 dokka = "2.3.0"
