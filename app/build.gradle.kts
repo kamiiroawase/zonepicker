@@ -14,7 +14,10 @@ android {
     namespace = "io.github.kamiiroawase.zonepicker.demo"
 
     compileSdk {
-        version = release(37)
+        version =
+            release(37) {
+                minorApiLevel = 1
+            }
     }
 
     defaultConfig {
